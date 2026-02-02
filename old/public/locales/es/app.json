@@ -1,0 +1,15 @@
+{
+  "calculationError": "Ocurrió un error durante el cálculo del plan de producción. Por favor, revisa tus objetivos y las configuraciones de recetas.",
+  "footer": {
+    "trademark": "Arknights: Endfield es una marca registrada de Hypergryph. Esta herramienta no está afiliada ni respaldada por Hypergryph.",
+    "unofficial": "Herramienta no oficial creada por fans"
+  },
+  "header": {},
+  "tabs": {
+    "merged": "Vista de Receta",
+    "separated": "Vista de Instalación",
+    "table": "Tabla de Producción",
+    "tree": "Árbol de Dependencias"
+  },
+  "title": "Endfield Calc"
+}

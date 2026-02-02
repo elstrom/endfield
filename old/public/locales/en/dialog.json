@@ -1,0 +1,13 @@
+{
+  "add": "Add",
+  "allItemsAdded": "All items have been added",
+  "cancel": "Cancel",
+  "clickToSelectDoubleClickToAdd": "",
+  "defaultRate": "Default Rate",
+  "hint": "💡 Double-click to quickly add | Selected: {{selected}}",
+  "noIcon": "None",
+  "noMatchingItems": "No matching items found",
+  "rateUnit": "per min",
+  "searchPlaceholder": "Search items...",
+  "title": "Select Target Item"
+}

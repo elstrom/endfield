@@ -1,0 +1,9 @@
+{
+  "addTarget": "添加目标",
+  "count": "{{current}} / {{max}}",
+  "noIcon": "无",
+  "rateInput": "产量输入",
+  "rateUnit": "个/分钟",
+  "removeTarget": "删除目标",
+  "title": "生产目标"
+}

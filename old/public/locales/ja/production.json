@@ -1,0 +1,45 @@
+{
+  "recipe": {
+    "inputs": "入力",
+    "outputs": "出力",
+    "time": "時間"
+  },
+  "table": {
+    "headers": {
+      "count": "数量",
+      "facility": "施設",
+      "icon": "アイコン",
+      "item": "アイテム",
+      "outputRate": "生産量/分",
+      "power": "電力 (kW)",
+      "rawMaterial": "原材料",
+      "recipe": "レシピ"
+    },
+    "manualRawMaterial": "原材料（手動マーク）",
+    "markAsRawMaterial": "原材料としてマーク",
+    "noData": "データなし",
+    "noRecipe": "レシピなし",
+    "rawMaterial": "原材料",
+    "unmarkRawMaterial": "マークを解除"
+  },
+  "tree": {
+    "alsoTarget": "ターゲットでもあります",
+    "circularRawMaterial": "循環依存材料",
+    "circularWarning": "生産サイクル警告",
+    "facility": "施設",
+    "facilityCount": "施設数",
+    "facilityIndex": "施設インデックス",
+    "item": "アイテム",
+    "noTarget": "生産目標が設定されていません。依存関係ツリーを表示するには目標を設定してください。",
+    "partialLoad": "部分負荷",
+    "power": "電力",
+    "produced": "生産",
+    "productionTarget": "生産目標",
+    "required": "必要",
+    "target": "ターゲット",
+    "targetDescription": "毎分 {{item}} を {{rate}} 生産します。",
+    "targetRate": "目標レート",
+    "pickupPoint": "取出口",
+    "trueRawMaterial": "真の原材料"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "recipe": {
+    "inputs": "输入",
+    "outputs": "产出",
+    "time": "耗时"
+  },
+  "table": {
+    "headers": {
+      "count": "数量",
+      "facility": "设施",
+      "icon": "图标",
+      "item": "物品",
+      "outputRate": "产能/分",
+      "power": "功耗 (kW)",
+      "rawMaterial": "原材料",
+      "recipe": "配方"
+    },
+    "manualRawMaterial": "原材料（手动标记）",
+    "markAsRawMaterial": "标记为原材料",
+    "noData": "暂无数据",
+    "noRecipe": "无配方",
+    "rawMaterial": "原材料",
+    "unmarkRawMaterial": "取消标记"
+  },
+  "tree": {
+    "alsoTarget": "同时也是目标",
+    "circularRawMaterial": "循环依赖原料",
+    "circularWarning": "生产循环警告",
+    "facility": "设施",
+    "facilityCount": "设施数量",
+    "facilityIndex": "设施序号",
+    "item": "物品",
+    "noTarget": "尚未设置目标产出。请设置目标以查看依赖树。",
+    "partialLoad": "部分负载",
+    "power": "电力",
+    "produced": "产出",
+    "productionTarget": "生产目标",
+    "required": "需求",
+    "target": "目标",
+    "targetDescription": "每分钟生产 {{item}} {{rate}}。",
+    "targetRate": "目标速率",
+    "pickupPoint": "取货口",
+    "trueRawMaterial": "纯净原料"
+  }
+}

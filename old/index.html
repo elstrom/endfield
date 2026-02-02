@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+
+  <!-- Primary Meta Tags -->
+  <title>
+    Endfield Calc - Production Chain Calculator for Arknights: Endfield
+  </title>
+  <meta name="title" content="Endfield Calc - Production Chain Calculator for Arknights: Endfield" />
+  <meta name="description"
+    content="Numeric production chain calculator for Arknights: Endfield. Calculate recipes, resource throughput, and factory production ratios. No layout or simulation. 明日方舟：终末地 工厂数值计算器。" />
+  <meta name="keywords"
+    content="Arknights Endfield, Endfield Calc, production calculator, production chain, factory calculator, recipe calculator, AIC base, 明日方舟, 终末地, 工厂计算器, 生产链计算" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Endfield Calc - Production Chain Calculator" />
+  <meta property="og:description"
+    content="Numeric production chain calculator for Arknights: Endfield. Calculate recipes, resources, and factory throughput. No layout or simulation." />
+  <meta property="og:site_name" content="Endfield Calc" />
+  <meta property="og:locale" content="en" />
+
+  <!-- Application -->
+  <meta name="theme-color" content="#000000" />
+  <meta name="application-name" content="Endfield Calc" />
+  <meta name="apple-mobile-web-app-title" content="Endfield Calc" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Endfield Calc",
+        "alternateName": "Arknights Endfield Production Chain Calculator",
+        "description": "Numeric-only production chain calculator for Arknights: Endfield. Calculates recipes, resource throughput, and factory production ratios. Does not provide layout or simulation.",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Web Browser",
+        "browserRequirements": "Requires JavaScript. Modern browser recommended.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "inLanguage": ["en", "es", "ja", "ko", "ru", "zh-Hans", "zh-Hant"],
+        "featureList": [
+          "Production chain calculation",
+          "Recipe and rate calculation",
+          "Resource throughput analysis",
+          "Factory ratio estimation",
+          "Multi-language support via i18next"
+        ]
+      }
+    </script>
+
+  <!-- Preconnect -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+</head>
+
+<body>
+  <!-- NoScript fallback -->
+  <noscript>
+    <div style="padding: 20px; text-align: center; font-family: system-ui, sans-serif;">
+      <h1>Endfield Calc</h1>
+      <p>
+        A free online production chain calculator for
+        <strong>Arknights: Endfield</strong>. Plan your AIC base factories,
+        compute crafting recipes and resource ratios, and optimize material
+        throughput — all in your browser.
+      </p>
+      <h2>Features</h2>
+      <ul style="text-align: left; max-width: 600px; margin: 20px auto">
+        <li>Browse all items, recipes, and production facilities</li>
+        <li>Calculate exact resource requirements for any target output</li>
+        <li>Analyze factory production ratios and throughput</li>
+        <li>Resolve full production chains with intermediate steps</li>
+        <li>Supports English, 简体中文, 繁體中文, 日本語, 한국어, Español, Русский</li>
+      </ul>
+      <p lang="zh-Hans">
+        明日方舟：终末地 生产链计算器。免费在线工具，支持配方查询、产出比计算、
+        工厂吞吐量分析，帮助规划 AIC 基地生产线。
+      </p>
+      <p><strong>This application requires JavaScript to run.</strong></p>
+    </div>
+  </noscript>
+
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

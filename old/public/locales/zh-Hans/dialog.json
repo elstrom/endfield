@@ -1,0 +1,13 @@
+{
+  "add": "添加",
+  "allItemsAdded": "所有物品都已添加",
+  "cancel": "取消",
+  "clickToSelectDoubleClickToAdd": "clickToSelectDoubleClickToAdd",
+  "defaultRate": "默认产量",
+  "hint": "💡 双击物品可快速添加 | 已选择: {{selected}}",
+  "noIcon": "无",
+  "noMatchingItems": "未找到匹配的物品",
+  "rateUnit": "个/分",
+  "searchPlaceholder": "搜索物品...",
+  "title": "选择目标物品"
+}

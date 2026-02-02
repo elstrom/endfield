@@ -1,0 +1,45 @@
+{
+  "recipe": {
+    "inputs": "Entradas",
+    "outputs": "Salidas",
+    "time": "Tiempo"
+  },
+  "table": {
+    "headers": {
+      "count": "Cantidad",
+      "facility": "Instalación",
+      "icon": "Icono",
+      "item": "Artículo",
+      "outputRate": "Producción/min",
+      "power": "Energía (kW)",
+      "rawMaterial": "Materia Prima",
+      "recipe": "Receta"
+    },
+    "manualRawMaterial": "Materia Prima (Marcada Manualmente)",
+    "markAsRawMaterial": "Marcar como materia prima",
+    "noData": "Sin datos",
+    "noRecipe": "Sin receta",
+    "rawMaterial": "Materia Prima",
+    "unmarkRawMaterial": "Desmarcar"
+  },
+  "tree": {
+    "alsoTarget": "También es un objetivo",
+    "circularRawMaterial": "Material de dependencia circular",
+    "circularWarning": "Advertencia de ciclo de producción",
+    "facility": "Instalación",
+    "facilityCount": "Cantidad de instalaciones",
+    "facilityIndex": "Índice de instalación",
+    "item": "Artículo",
+    "noTarget": "No se ha establecido ningún objetivo de producción. Establezca un objetivo para ver el árbol de dependencias.",
+    "partialLoad": "Carga parcial",
+    "power": "Energía",
+    "produced": "Producido",
+    "productionTarget": "Objetivo de producción",
+    "required": "Requerido",
+    "target": "Objetivo",
+    "targetDescription": "Producir {{rate}} {{item}} por minuto.",
+    "targetRate": "Tasa objetivo",
+    "pickupPoint": "Punto de recogida",
+    "trueRawMaterial": "Materia prima verdadera"
+  }
+}

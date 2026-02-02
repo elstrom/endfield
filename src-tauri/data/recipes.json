@@ -1,0 +1,38 @@
+[
+    {
+        "id": "recipe.furnace_iron_1",
+        "name": "Smelt Iron",
+        "inputs": [
+            {
+                "item_id": "item_iron_ore",
+                "amount": 1.0
+            }
+        ],
+        "outputs": [
+            {
+                "item_id": "item_iron_nugget",
+                "amount": 1.0
+            }
+        ],
+        "crafting_time": 2.0,
+        "facility_id": "port.furnace_1"
+    },
+    {
+        "id": "recipe.grinder_iron_1",
+        "name": "Grind Iron",
+        "inputs": [
+            {
+                "item_id": "item_iron_nugget",
+                "amount": 1.0
+            }
+        ],
+        "outputs": [
+            {
+                "item_id": "item_iron_powder",
+                "amount": 1.0
+            }
+        ],
+        "crafting_time": 2.0,
+        "facility_id": "port.grinder_1"
+    }
+]

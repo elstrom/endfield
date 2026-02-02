@@ -1,0 +1,25 @@
+[package]
+name = "endfield-sandbox"
+version = "0.1.0"
+description = "Arknights: Endfield Production Sandbox"
+authors = ["Antigravity"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "endfield_sandbox_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+wgpu = "23.0"
+pollster = "0.4"
+bytemuck = { version = "1", features = ["derive"] }
+

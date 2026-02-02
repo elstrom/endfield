@@ -1,0 +1,50 @@
+[
+    {
+        "id": "item_originium_ore",
+        "name": "Originium Ore",
+        "tier": 1,
+        "is_raw": true
+    },
+    {
+        "id": "item_quartz_sand",
+        "name": "Quartz Sand",
+        "tier": 1,
+        "is_raw": true
+    },
+    {
+        "id": "item_iron_ore",
+        "name": "Iron Ore",
+        "tier": 1,
+        "is_raw": true
+    },
+    {
+        "id": "item_liquid_water",
+        "name": "Liquid Water",
+        "tier": 1,
+        "is_raw": true
+    },
+    {
+        "id": "item_iron_nugget",
+        "name": "Iron Nugget",
+        "tier": 2,
+        "is_raw": false
+    },
+    {
+        "id": "item_iron_powder",
+        "name": "Iron Powder",
+        "tier": 2,
+        "is_raw": false
+    },
+    {
+        "id": "item_quartz_glass",
+        "name": "Quartz Glass",
+        "tier": 2,
+        "is_raw": false
+    },
+    {
+        "id": "item_glass_cmpt",
+        "name": "Glass Component",
+        "tier": 2,
+        "is_raw": false
+    }
+]

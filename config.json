@@ -1,0 +1,32 @@
+{
+    "simulation": {
+        "grid_size": 32,
+        "world_width": 5000,
+        "world_height": 5000,
+        "initial_zoom": 1.0,
+        "min_zoom": 0.15,
+        "max_zoom": 3.0
+    },
+    "visuals": {
+        "colors": {
+            "background": "0x050505",
+            "grid_line": "0x111111",
+            "brand": "0xff6400",
+            "topology_edge": "0xff6400",
+            "ghost_valid": "0xff6400",
+            "ghost_colliding": "0xff0000",
+            "node_border": "0xffffff"
+        },
+        "opacity": {
+            "grid": 0.5,
+            "topology": 0.4,
+            "ghost": 0.2,
+            "node_border": 0.1
+        }
+    },
+    "engine": {
+        "gpu_workgroup_size": 64,
+        "tick_rate_ms": 100,
+        "auto_optimize": false
+    }
+}

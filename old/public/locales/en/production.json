@@ -1,0 +1,45 @@
+{
+  "recipe": {
+    "inputs": "Inputs",
+    "outputs": "Outputs",
+    "time": "Time"
+  },
+  "table": {
+    "headers": {
+      "count": "Count",
+      "facility": "Facility",
+      "icon": "Icon",
+      "item": "Item",
+      "outputRate": "Output/min",
+      "power": "Power (kW)",
+      "rawMaterial": "Raw Material",
+      "recipe": "Recipe"
+    },
+    "manualRawMaterial": "Raw Material (Manually Marked)",
+    "markAsRawMaterial": "Mark as raw material",
+    "noData": "No data",
+    "noRecipe": "No recipe",
+    "rawMaterial": "Raw Material",
+    "unmarkRawMaterial": "Unmark"
+  },
+  "tree": {
+    "alsoTarget": "Also a target",
+    "circularRawMaterial": "Circular dependency material",
+    "circularWarning": "Production cycle warning",
+    "facility": "Facility",
+    "facilityCount": "Facility count",
+    "facilityIndex": "Facility index",
+    "item": "Item",
+    "noTarget": "No production target set. Please set a target to view the dependency tree.",
+    "partialLoad": "Partial load",
+    "power": "Power",
+    "produced": "Produced",
+    "productionTarget": "Production target",
+    "required": "Required",
+    "target": "Target",
+    "targetDescription": "Produce {{rate}} {{item}} per minute.",
+    "targetRate": "Target rate",
+    "pickupPoint": "Pickup Point",
+    "trueRawMaterial": "True raw material"
+  }
+}

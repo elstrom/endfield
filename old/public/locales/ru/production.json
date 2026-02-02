@@ -1,0 +1,45 @@
+{
+  "recipe": {
+    "inputs": "Входы",
+    "outputs": "Выходы",
+    "time": "Время"
+  },
+  "table": {
+    "headers": {
+      "count": "Количество",
+      "facility": "Объект",
+      "icon": "Значок",
+      "item": "Предмет",
+      "outputRate": "Производство/мин",
+      "power": "Энергия (кВт)",
+      "rawMaterial": "Сырье",
+      "recipe": "Рецепт"
+    },
+    "manualRawMaterial": "Сырье (Отмечено вручную)",
+    "markAsRawMaterial": "Пометить как сырье",
+    "noData": "Нет данных",
+    "noRecipe": "Нет рецепта",
+    "rawMaterial": "Сырье",
+    "unmarkRawMaterial": "Снять отметку"
+  },
+  "tree": {
+    "alsoTarget": "Также является целью",
+    "circularRawMaterial": "Материал циклической зависимости",
+    "circularWarning": "Предупреждение о производственном цикле",
+    "facility": "Объект",
+    "facilityCount": "Количество объектов",
+    "facilityIndex": "Индекс объекта",
+    "item": "Предмет",
+    "noTarget": "Цель производства не установлена. Пожалуйста, установите цель для просмотра дерева зависимостей.",
+    "partialLoad": "Частичная нагрузка",
+    "power": "Энергия",
+    "produced": "Произведено",
+    "productionTarget": "Цель производства",
+    "required": "Требуется",
+    "target": "Цель",
+    "targetDescription": "Производить {{rate}} {{item}} в минуту.",
+    "targetRate": "Целевая скорость",
+    "pickupPoint": "Точка выдачи",
+    "trueRawMaterial": "Настоящее сырье"
+  }
+}

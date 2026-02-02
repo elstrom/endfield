@@ -1,0 +1,688 @@
+[
+  {
+    "type": "Belt Bridge",
+    "width": 1,
+    "height": 1,
+    "visual_color": "0x555555",
+    "ports": [],
+    "power_consumption": 0.0
+  },
+  {
+    "type": "Converger",
+    "width": 1,
+    "height": 1,
+    "visual_color": "0x777777",
+    "ports": [
+      {
+        "id": "in_1",
+        "type": "input",
+        "x": 0,
+        "y": 0,
+        "direction": "left"
+      },
+      {
+        "id": "in_2",
+        "type": "input",
+        "x": 0,
+        "y": 0,
+        "direction": "top"
+      },
+      {
+        "id": "in_3",
+        "type": "input",
+        "x": 0,
+        "y": 0,
+        "direction": "bottom"
+      },
+      {
+        "id": "out_1",
+        "type": "output",
+        "x": 0,
+        "y": 0,
+        "direction": "right"
+      }
+    ]
+  },
+  {
+    "type": "Pipe Control Port",
+    "width": 1,
+    "height": 1,
+    "visual_color": "0x4444ff",
+    "ports": []
+  },
+  {
+    "type": "Pipe Splitter",
+    "width": 1,
+    "height": 1,
+    "visual_color": "0x777777",
+    "ports": []
+  },
+  {
+    "type": "Pipe Bridge",
+    "width": 1,
+    "height": 1,
+    "visual_color": "0x555555",
+    "ports": []
+  },
+  {
+    "type": "Pipe Converger",
+    "width": 1,
+    "height": 1,
+    "visual_color": "0x777777",
+    "ports": []
+  },
+  {
+    "type": "Splitter",
+    "width": 1,
+    "height": 1,
+    "visual_color": "0x777777",
+    "ports": [
+      {
+        "id": "in_1",
+        "type": "input",
+        "x": 0,
+        "y": 0,
+        "direction": "left"
+      },
+      {
+        "id": "out_1",
+        "type": "output",
+        "x": 0,
+        "y": 0,
+        "direction": "top"
+      },
+      {
+        "id": "out_2",
+        "type": "output",
+        "x": 0,
+        "y": 0,
+        "direction": "bottom"
+      },
+      {
+        "id": "out_3",
+        "type": "output",
+        "x": 0,
+        "y": 0,
+        "direction": "right"
+      }
+    ]
+  },
+  {
+    "type": "Refining Unit",
+    "width": 3,
+    "height": 3,
+    "visual_color": "0xffaa00",
+    "ports": [
+      {
+        "id": "in_1",
+        "type": "input",
+        "x": 2,
+        "y": 0,
+        "direction": "left"
+      },
+      {
+        "id": "in_2",
+        "type": "input",
+        "x": 2,
+        "y": 1,
+        "direction": "left"
+      },
+      {
+        "id": "in_3",
+        "type": "input",
+        "x": 2,
+        "y": 2,
+        "direction": "left"
+      },
+      {
+        "id": "out_4",
+        "type": "output",
+        "x": 0,
+        "y": 0,
+        "direction": "left"
+      },
+      {
+        "id": "out_5",
+        "type": "output",
+        "x": 0,
+        "y": 1,
+        "direction": "left"
+      },
+      {
+        "id": "out_6",
+        "type": "output",
+        "x": 0,
+        "y": 2,
+        "direction": "left"
+      }
+    ]
+  },
+  {
+    "type": "Fitting Unit",
+    "width": 3,
+    "height": 3,
+    "visual_color": "0xffaa00",
+    "ports": [
+      {
+        "id": "in_1",
+        "type": "input",
+        "x": 2,
+        "y": 0,
+        "direction": "left"
+      },
+      {
+        "id": "in_2",
+        "type": "input",
+        "x": 2,
+        "y": 1,
+        "direction": "left"
+      },
+      {
+        "id": "in_3",
+        "type": "input",
+        "x": 2,
+        "y": 2,
+        "direction": "left"
+      },
+      {
+        "id": "out_4",
+        "type": "output",
+        "x": 0,
+        "y": 0,
+        "direction": "left"
+      },
+      {
+        "id": "out_5",
+        "type": "output",
+        "x": 0,
+        "y": 1,
+        "direction": "left"
+      },
+      {
+        "id": "out_6",
+        "type": "output",
+        "x": 0,
+        "y": 2,
+        "direction": "left"
+      }
+    ]
+  },
+  {
+    "type": "Gearing Unit",
+    "width": 6,
+    "height": 4,
+    "visual_color": "0xffaa00",
+    "ports": [
+      {
+        "id": "in_1",
+        "type": "input",
+        "x": 0,
+        "y": 0,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_2",
+        "type": "input",
+        "x": 1,
+        "y": 0,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_3",
+        "type": "input",
+        "x": 2,
+        "y": 0,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_4",
+        "type": "input",
+        "x": 3,
+        "y": 0,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_5",
+        "type": "input",
+        "x": 4,
+        "y": 0,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_6",
+        "type": "input",
+        "x": 5,
+        "y": 0,
+        "direction": "bottom"
+      },
+      {
+        "id": "out_7",
+        "type": "output",
+        "x": 5,
+        "y": 3,
+        "direction": "bottom"
+      },
+      {
+        "id": "out_8",
+        "type": "output",
+        "x": 3,
+        "y": 3,
+        "direction": "bottom"
+      },
+      {
+        "id": "out_9",
+        "type": "output",
+        "x": 4,
+        "y": 3,
+        "direction": "bottom"
+      },
+      {
+        "id": "out_10",
+        "type": "output",
+        "x": 2,
+        "y": 3,
+        "direction": "bottom"
+      },
+      {
+        "id": "out_11",
+        "type": "output",
+        "x": 1,
+        "y": 3,
+        "direction": "bottom"
+      },
+      {
+        "id": "out_12",
+        "type": "output",
+        "x": 0,
+        "y": 3,
+        "direction": "bottom"
+      }
+    ]
+  },
+  {
+    "type": "Moulding Unit",
+    "width": 3,
+    "height": 3,
+    "visual_color": "0xffaa00",
+    "ports": [
+      {
+        "id": "in_1",
+        "type": "input",
+        "x": 2,
+        "y": 0,
+        "direction": "left"
+      },
+      {
+        "id": "in_2",
+        "type": "input",
+        "x": 2,
+        "y": 1,
+        "direction": "left"
+      },
+      {
+        "id": "in_3",
+        "type": "input",
+        "x": 2,
+        "y": 2,
+        "direction": "left"
+      },
+      {
+        "id": "out_4",
+        "type": "output",
+        "x": 0,
+        "y": 0,
+        "direction": "left"
+      },
+      {
+        "id": "out_5",
+        "type": "output",
+        "x": 0,
+        "y": 1,
+        "direction": "left"
+      },
+      {
+        "id": "out_6",
+        "type": "output",
+        "x": 0,
+        "y": 2,
+        "direction": "left"
+      }
+    ]
+  },
+  {
+    "type": "Filling Unit",
+    "width": 6,
+    "height": 4,
+    "visual_color": "0x4444ff",
+    "ports": [
+      {
+        "id": "in_1",
+        "type": "input",
+        "x": 0,
+        "y": 0,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_2",
+        "type": "input",
+        "x": 1,
+        "y": 0,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_3",
+        "type": "input",
+        "x": 2,
+        "y": 0,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_4",
+        "type": "input",
+        "x": 3,
+        "y": 0,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_5",
+        "type": "input",
+        "x": 4,
+        "y": 0,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_6",
+        "type": "input",
+        "x": 5,
+        "y": 0,
+        "direction": "bottom"
+      },
+      {
+        "id": "out_7",
+        "type": "output",
+        "x": 0,
+        "y": 3,
+        "direction": "bottom"
+      },
+      {
+        "id": "out_8",
+        "type": "output",
+        "x": 1,
+        "y": 3,
+        "direction": "bottom"
+      },
+      {
+        "id": "out_9",
+        "type": "output",
+        "x": 2,
+        "y": 3,
+        "direction": "bottom"
+      },
+      {
+        "id": "out_10",
+        "type": "output",
+        "x": 3,
+        "y": 3,
+        "direction": "bottom"
+      },
+      {
+        "id": "out_11",
+        "type": "output",
+        "x": 4,
+        "y": 3,
+        "direction": "bottom"
+      },
+      {
+        "id": "out_12",
+        "type": "output",
+        "x": 5,
+        "y": 3,
+        "direction": "bottom"
+      }
+    ]
+  },
+  {
+    "type": "Protocol Automation-Core (PAC)",
+    "width": 8,
+    "height": 9,
+    "visual_color": "0x4444ff",
+    "ports": [
+      {
+        "id": "out_1",
+        "type": "output",
+        "x": 7,
+        "y": 1,
+        "direction": "right"
+      },
+      {
+        "id": "out_2",
+        "type": "output",
+        "x": 7,
+        "y": 4,
+        "direction": "right"
+      },
+      {
+        "id": "out_3",
+        "type": "output",
+        "x": 7,
+        "y": 7,
+        "direction": "right"
+      },
+      {
+        "id": "out_4",
+        "type": "output",
+        "x": 0,
+        "y": 1,
+        "direction": "left"
+      },
+      {
+        "id": "out_5",
+        "type": "output",
+        "x": 0,
+        "y": 4,
+        "direction": "left"
+      },
+      {
+        "id": "out_6",
+        "type": "output",
+        "x": 0,
+        "y": 7,
+        "direction": "left"
+      },
+      {
+        "id": "in_7",
+        "type": "input",
+        "x": 1,
+        "y": 8,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_8",
+        "type": "input",
+        "x": 2,
+        "y": 8,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_9",
+        "type": "input",
+        "x": 3,
+        "y": 8,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_10",
+        "type": "input",
+        "x": 4,
+        "y": 8,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_11",
+        "type": "input",
+        "x": 5,
+        "y": 8,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_12",
+        "type": "input",
+        "x": 6,
+        "y": 8,
+        "direction": "bottom"
+      },
+      {
+        "id": "in_13",
+        "type": "input",
+        "x": 6,
+        "y": 0,
+        "direction": "top"
+      },
+      {
+        "id": "in_14",
+        "type": "input",
+        "x": 5,
+        "y": 0,
+        "direction": "top"
+      },
+      {
+        "id": "in_15",
+        "type": "input",
+        "x": 4,
+        "y": 0,
+        "direction": "top"
+      },
+      {
+        "id": "in_16",
+        "type": "input",
+        "x": 3,
+        "y": 0,
+        "direction": "top"
+      },
+      {
+        "id": "in_17",
+        "type": "input",
+        "x": 2,
+        "y": 0,
+        "direction": "top"
+      },
+      {
+        "id": "in_18",
+        "type": "input",
+        "x": 1,
+        "y": 0,
+        "direction": "top"
+      }
+    ]
+  },
+  {
+    "type": "Item Control Port",
+    "width": 1,
+    "height": 1,
+    "visual_color": "0x4444ff",
+    "ports": [
+      {
+        "id": "in_1",
+        "type": "input",
+        "x": 0,
+        "y": 0,
+        "direction": "left"
+      },
+      {
+        "id": "out_1",
+        "type": "output",
+        "x": 0,
+        "y": 0,
+        "direction": "right"
+      }
+    ]
+  },
+  {
+    "type": "Depot Unloader",
+    "width": 1,
+    "height": 1,
+    "visual_color": "0x00aa00",
+    "ports": [
+      {
+        "id": "out_1",
+        "type": "output",
+        "x": 0,
+        "y": 0,
+        "direction": "right"
+      }
+    ]
+  },
+  {
+    "type": "Depot Loader",
+    "width": 1,
+    "height": 1,
+    "visual_color": "0xaa0000",
+    "ports": [
+      {
+        "id": "in_1",
+        "type": "input",
+        "x": 0,
+        "y": 0,
+        "direction": "left"
+      }
+    ]
+  },
+  {
+    "type": "Depot Bus Port",
+    "width": 2,
+    "height": 2,
+    "visual_color": "0x00aa00",
+    "ports": []
+  },
+  {
+    "type": "Depot Bus Section",
+    "width": 2,
+    "height": 2,
+    "visual_color": "0xaa0000",
+    "ports": []
+  },
+  {
+    "type": "Protocol Warehouse",
+    "width": 2,
+    "height": 2,
+    "visual_color": "0x884400",
+    "ports": [
+      {
+        "id": "in_1",
+        "type": "input",
+        "x": 0,
+        "y": 1,
+        "direction": "left"
+      },
+      {
+        "id": "out_1",
+        "type": "output",
+        "x": 1,
+        "y": 0,
+        "direction": "right"
+      }
+    ]
+  },
+  {
+    "type": "Thermal Power Plant",
+    "width": 3,
+    "height": 3,
+    "visual_color": "0xff3300",
+    "ports": [
+      {
+        "id": "in_1",
+        "type": "input",
+        "x": 1,
+        "y": 1,
+        "direction": "bottom"
+      }
+    ]
+  },
+  {
+    "type": "Power Diffuser",
+    "width": 1,
+    "height": 1,
+    "visual_color": "0xffff00",
+    "ports": []
+  }
+]
