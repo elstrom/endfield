@@ -24,12 +24,13 @@ This document defines the spatial and logistics logic for the Arknights: Endfiel
 - **Pathfinding**: The system must calculate a path through unoccupied blocks to connect ports.
 
 ## 5. Optimization Objectives
-- **Route Efficiency**: Minimize the number of belt blocks used (minimizes space and latency).
-- **Space Density**: Maximize the number of facilities within a given plate.
-- **Power Efficiency**: Place facilities to minimize the number of Relay Towers/Pylons needed.
-- **Output Maximization**: Arrange everything to meet production targets at 100% efficiency.
+- **Maximum Sustainable Throughput**: Find the highest production rate physically possible within the given plate, power, and logistics constraints.
+- **Route Efficiency**: Minimize belt length to reduce latency and free up space for more facilities.
+- **Space Density**: Maximize the ratio of "Productive Area" vs "Logistics Area".
+- **Balanced Flow**: Ensure that input supply exactly matches output consumption to prevent belt clogging (Backpressure Management).
 
 ## 6. Known Constraints
 - **Boundaries**: Facilities and belts cannot be placed outside the current plate area.
 - **Collisions**: Two facilities or belts cannot occupy the same block.
-- **Goal-Driven**: The layout is generated based on a specific "Final Product" target.
+- **Throughput Caps**: Production is limited by the `craftingTime` and the physical bandwidth of the conveyors.
+- **Constraint-Limited**: Unlike a simple calculator, the layout generation prioritizes what is *possible* over what is *requested*.

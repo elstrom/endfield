@@ -1,6 +1,6 @@
 [
     {
-        "id": "recipe.furnace_iron_1",
+        "id": "recipe.smelt_iron",
         "name": "Smelt Iron",
         "inputs": [
             {
@@ -15,10 +15,10 @@
             }
         ],
         "crafting_time": 2.0,
-        "facility_id": "port.furnace_1"
+        "facility_id": "refining_unit"
     },
     {
-        "id": "recipe.grinder_iron_1",
+        "id": "recipe.grind_iron",
         "name": "Grind Iron",
         "inputs": [
             {
@@ -33,6 +33,42 @@
             }
         ],
         "crafting_time": 2.0,
-        "facility_id": "port.grinder_1"
+        "facility_id": "shredding_unit"
+    },
+    {
+        "id": "recipe.smelt_glass",
+        "name": "Smelt Glass",
+        "inputs": [
+            {
+                "item_id": "item_quartz_sand",
+                "amount": 1.0
+            }
+        ],
+        "outputs": [
+            {
+                "item_id": "item_quartz_glass",
+                "amount": 1.0
+            }
+        ],
+        "crafting_time": 2.0,
+        "facility_id": "refining_unit"
+    },
+    {
+        "id": "recipe.make_glass_component",
+        "name": "Glass Component",
+        "inputs": [
+            {
+                "item_id": "item_quartz_glass",
+                "amount": 2.0
+            }
+        ],
+        "outputs": [
+            {
+                "item_id": "item_glass_cmpt",
+                "amount": 1.0
+            }
+        ],
+        "crafting_time": 4.0,
+        "facility_id": "fitting_unit"
     }
 ]

@@ -33,9 +33,12 @@ pub struct FacilityRequirement {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProductionPlan {
     pub target_items: Vec<String>,
+    pub actual_rates: HashMap<String, f64>, // item_id -> actual achievable rate
     pub required_facilities: Vec<FacilityRequirement>,
-    pub raw_materials: HashMap<String, f64>, // item_id -> amount per minute
+    pub raw_materials: HashMap<String, f64>,
     pub total_power: f64,
+    pub constraint_limited: bool,
+    pub limiting_factor: Option<String>,
 }
 
 pub struct RecipeSolver {
@@ -64,10 +67,12 @@ impl RecipeSolver {
         (amount * 60.0) / crafting_time
     }
 
-    /// Solve production requirements for target items
+    /// Solve production requirements validating against constraints
     pub fn solve(
         &self,
-        target_items: Vec<(String, f64)>, // (item_id, rate_per_minute)
+        target_items: Vec<(String, f64)>, // (item_id, requested_rate)
+        plate_width: i32,
+        plate_height: i32,
     ) -> Result<ProductionPlan, String> {
         let mut required_facilities: Vec<FacilityRequirement> = Vec::new();
         let mut item_demands: HashMap<String, f64> = HashMap::new();
@@ -79,41 +84,40 @@ impl RecipeSolver {
             item_demands.insert(item_id.clone(), *rate);
         }
 
-        // Process items in dependency order (simple DFS for now)
+        // 1. Calculate Theoretical Requirements (Unlimited)
         let mut stack: Vec<String> = target_items.iter().map(|(id, _)| id.clone()).collect();
+        let mut temp_processed = HashSet::new();
 
+        // Topological sort / Dependency check loop
+        // Warning: This simple loop assumes no cycles. Endfield recipes generally don't have cycles except complex ones.
+        // For simplicity, we process demand propagation.
+        
+        // We'll use a loop that processes items when their dependencies are known or they are targets
+        // Actually, the previous stack approach was fine for trees.
+        
         while let Some(item_id) = stack.pop() {
-            if processed_items.contains(&item_id) {
-                continue;
-            }
-
+            // Checks to prevent infinite loops if cycles exist
+            if temp_processed.contains(&item_id) { continue; }
+            
             let demand = *item_demands.get(&item_id).unwrap_or(&0.0);
-            if demand == 0.0 {
-                continue;
-            }
+            if demand <= 0.0001 { continue; }
 
-            // Find recipe for this item
             let recipes = self.find_recipes_for_item(&item_id);
             if recipes.is_empty() {
-                // This is a raw material
+                // Raw material
                 raw_materials.insert(item_id.clone(), demand);
-                processed_items.insert(item_id.clone());
+                temp_processed.insert(item_id.clone());
                 continue;
             }
 
-            // Select first recipe (can be improved with heuristics)
-            let recipe = recipes[0];
+            let recipe = recipes[0]; // TODO: Smart recipe selection
             
-            // Calculate facility count needed
             let output = recipe.outputs.iter().find(|o| o.item_id == item_id).unwrap();
-            let production_rate = Self::calc_rate(output.amount, recipe.crafting_time);
-            let facility_count = if production_rate > 0.0 {
-                demand / production_rate
-            } else {
-                0.0
-            };
+            let production_rate_per_facility = Self::calc_rate(output.amount, recipe.crafting_time);
+            
+            let facility_count = demand / production_rate_per_facility;
 
-            // Get facility type
+            // Get facility info
             let facility = self.facilities.get(&recipe.facility_id)
                 .ok_or_else(|| format!("Facility not found: {}", recipe.facility_id))?;
 
@@ -126,28 +130,81 @@ impl RecipeSolver {
 
             // Add input demands
             for input in &recipe.inputs {
-                let input_rate = Self::calc_rate(input.amount, recipe.crafting_time) * facility_count;
+                // Input rate needed = (input_amount / crafting_time * 60) * facility_count
+                // Simplified: (input_amount / output_amount) * demand
+                let input_rate = (input.amount / output.amount) * demand;
                 *item_demands.entry(input.item_id.clone()).or_insert(0.0) += input_rate;
                 stack.push(input.item_id.clone());
             }
-
-            processed_items.insert(item_id);
+            
+            temp_processed.insert(item_id);
         }
 
-        // Calculate total power
-        let total_power: f64 = required_facilities.iter()
-            .filter_map(|req| {
-                self.facilities.get(&req.facility_id).map(|f| {
-                    f.power_consumption as f64 * req.count
-                })
-            })
-            .sum();
+        // 2. Validate Constraints
+        let total_area_blocks = (plate_width * plate_height) as f64;
+        let usable_area_ratio = 0.75; // Reserve 25% for logistics
+        let max_usable_area = total_area_blocks * usable_area_ratio;
+        
+        let mut total_facility_area = 0.0;
+        let mut total_power = 0.0;
+
+        for req in &required_facilities {
+            if let Some(fac) = self.facilities.get(&req.facility_id) {
+                // Area = width * height * count
+                let area = (fac.width * fac.height) as f64 * req.count;
+                total_facility_area += area;
+                
+                // Power = power * count
+                total_power += fac.power_consumption as f64 * req.count;
+            }
+        }
+
+        // 3. Calculate Scale Factor
+        let mut scale_factor = 1.0;
+        let mut limiting_factor = None;
+
+        if total_facility_area > max_usable_area {
+            let area_scale = max_usable_area / total_facility_area;
+            if area_scale < scale_factor {
+                scale_factor = area_scale;
+                limiting_factor = Some(format!("Space ({:.0}%)", area_scale * 100.0));
+            }
+        }
+        
+        // Example Power Budget (Hardcoded for now as we don't have dynamic power source selection yet)
+        let power_budget = 5000.0; // Assume a generic base limit
+        if total_power > power_budget {
+            let power_scale = power_budget / total_power;
+            if power_scale < scale_factor {
+                scale_factor = power_scale;
+                limiting_factor = Some(format!("Power ({:.0}%)", power_scale * 100.0));
+            }
+        }
+
+        // 4. Apply Scaling
+        if scale_factor < 1.0 {
+            for req in &mut required_facilities {
+                req.count *= scale_factor;
+            }
+            for val in raw_materials.values_mut() {
+                *val *= scale_factor;
+            }
+            total_power *= scale_factor;
+        }
+
+        let mut actual_rates = HashMap::new();
+        for (item_id, target_rate) in target_items {
+            actual_rates.insert(item_id, target_rate * scale_factor);
+        }
 
         Ok(ProductionPlan {
-            target_items: target_items.iter().map(|(id, _)| id.clone()).collect(),
+            target_items: actual_rates.keys().cloned().collect(),
+            actual_rates,
             required_facilities,
             raw_materials,
             total_power,
+            constraint_limited: scale_factor < 1.0,
+            limiting_factor,
         })
     }
 }

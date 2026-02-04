@@ -93,6 +93,23 @@ export function useSandbox() {
         }));
     }, []);
 
+    const clearBoard = useCallback(() => {
+        setPlacedFacilities([]);
+        setEdges([]);
+    }, []);
+
+    const applyLayout = useCallback((layout: any[]) => {
+        const newFacilities = layout.map(f => ({
+            instanceId: Math.random().toString(36).substr(2, 9),
+            facilityId: f.facility_id,
+            x: f.x * 32, // Convert grid cells to pixels
+            y: f.y * 32,
+            rotation: f.rotation,
+        }));
+        setPlacedFacilities(newFacilities);
+        setEdges([]); // Clear edges for now as layout generator doesn't output edges yet
+    }, []);
+
     return {
         placedFacilities,
         edges,
@@ -100,5 +117,7 @@ export function useSandbox() {
         addEdge,
         isColliding,
         rotateFacility,
+        applyLayout,
+        clearBoard
     };
 }

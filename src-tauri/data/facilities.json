@@ -8,6 +8,14 @@
         "tier": 1
     },
     {
+        "id": "shredding_unit",
+        "name": "Shredding Unit",
+        "width": 3,
+        "height": 3,
+        "power": 5.0,
+        "tier": 1
+    },
+    {
         "id": "fitting_unit",
         "name": "Fitting Unit",
         "width": 3,

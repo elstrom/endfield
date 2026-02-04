@@ -15,7 +15,11 @@ declare global {
     }
 }
 
-export function Viewport() {
+interface ViewportProps {
+    onOpenPlanner: () => void;
+}
+
+export function Viewport({ onOpenPlanner }: ViewportProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const appRef = useRef<Application | null>(null);
     const worldRef = useRef<Container | null>(null);
@@ -157,7 +161,7 @@ export function Viewport() {
                     }
                 } catch (e) {
                     const rect = new Graphics();
-                    rect.beginFill(0x222222);
+                    rect.beginFill(0xeeeeee);
                     rect.drawRect(pf.x, pf.y, meta.width * GRID_SIZE, meta.height * GRID_SIZE);
                     rect.endFill();
                     facilitiesLayer.addChild(rect);
@@ -176,7 +180,7 @@ export function Viewport() {
             const app = new Application();
             await app.init({
                 resizeTo: containerRef.current!,
-                backgroundColor: parseInt(config.visuals.colors.background),
+                backgroundColor: 0xf8fafc, // Light background
                 antialias: true,
                 resolution: window.devicePixelRatio || 1,
             });
@@ -190,7 +194,7 @@ export function Viewport() {
             worldRef.current = world;
 
             const grid = new Graphics();
-            grid.setStrokeStyle({ width: 1, color: parseInt(config.visuals.colors.grid_line), alpha: config.visuals.opacity.grid });
+            grid.setStrokeStyle({ width: 1, color: 0xe2e8f0, alpha: 1 });
             const boardSize = config.simulation.world_width;
             for (let x = 0; x <= boardSize; x += GRID_SIZE) grid.moveTo(x, 0).lineTo(x, boardSize);
             for (let y = 0; y <= boardSize; y += GRID_SIZE) grid.moveTo(0, y).lineTo(boardSize, y);
@@ -329,26 +333,32 @@ export function Viewport() {
         window.config = config;
     }, [selectedFacilityId, addFacility, addEdge, isColliding, appData, placedFacilities, config]);
 
-    if (!config) return <div className="w-full h-full bg-black flex items-center justify-center text-brand font-black animate-pulse">BOOTING NEURAL SOLVER...</div>;
+    if (!config) return <div className="w-full h-full bg-slate-50 flex items-center justify-center text-brand font-black animate-pulse">BOOTING NEURAL SOLVER...</div>;
 
     return (
-        <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-[#050505]">
+        <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-slate-100">
+            {/* HUD Left */}
             <div className="absolute top-6 left-6 z-10 flex flex-col gap-6 pointer-events-none">
-                <div className="p-6 bg-black/90 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 text-white shadow-2xl pointer-events-auto w-80">
+                <div className="p-8 bg-white/90 backdrop-blur-3xl rounded-[3rem] border border-slate-200 text-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.05)] pointer-events-auto w-80">
                     <div className="flex items-center gap-4 mb-8">
-                        <div className="w-4 h-4 rounded-full bg-brand shadow-[0_0_20px_rgba(255,80,0,0.6)] animate-pulse" />
-                        <h2 className="text-2xl font-black italic text-brand tracking-tighter uppercase">END-CORE</h2>
+                        <div className="w-4 h-4 rounded-full bg-brand shadow-[0_0_20px_rgba(255,80,0,0.3)] animate-pulse" />
+                        <h2 className="text-2xl font-black italic text-brand tracking-tighter uppercase leading-none">END-CORE</h2>
                     </div>
                     <div className="space-y-6">
-                        <h3 className="text-[10px] font-bold opacity-30 uppercase tracking-[0.4em] ml-2">Units Palette</h3>
-                        <div className="grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto pr-3 scrollbar-hide">
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-1">Building Units</h3>
+                        <div className="grid grid-cols-1 gap-3 max-h-[55vh] overflow-y-auto pr-3 custom-scrollbar">
                             {appData.facilities.map((f) => (
-                                <button key={f.id} onClick={() => setSelectedFacilityId(f.id)} className={`group flex items-center gap-4 p-4 rounded-3xl border transition-all pointer-events-auto w-full relative ${selectedFacilityId === f.id ? "bg-brand border-brand shadow-lg" : "bg-white/[0.03] border-white/5"}`}>
-                                    <img src={`/images/facilities/${f.id}.png`} className={`w-14 h-14 object-contain rounded-2xl p-2 ${selectedFacilityId === f.id ? "bg-black/20" : "bg-black/40"}`} />
-                                    <div>
-                                        <div className={`text-md font-black tracking-tight ${selectedFacilityId === f.id ? "text-black" : "text-white/90"}`}>{f.name}</div>
-                                        <div className={`text-[9px] font-bold mt-1 uppercase tracking-widest ${selectedFacilityId === f.id ? "text-black/50" : "opacity-30"}`}>{f.width}×{f.height}</div>
+                                <button
+                                    key={f.id}
+                                    onClick={() => setSelectedFacilityId(f.id)}
+                                    className={`group flex items-center gap-4 p-4 rounded-3xl border transition-all pointer-events-auto w-full relative ${selectedFacilityId === f.id ? "bg-slate-900 border-slate-900 shadow-xl" : "bg-slate-50 border-slate-100 hover:border-brand/30 hover:bg-white"}`}
+                                >
+                                    <img src={`/images/facilities/${f.id}.png`} className={`w-14 h-14 object-contain rounded-2xl p-2 bg-white border border-slate-100`} />
+                                    <div className="text-left">
+                                        <div className={`text-sm font-black tracking-tight leading-none ${selectedFacilityId === f.id ? "text-white" : "text-slate-900"}`}>{f.name}</div>
+                                        <div className={`text-[9px] font-bold mt-2 uppercase tracking-widest ${selectedFacilityId === f.id ? "text-brand" : "text-slate-400"}`}>{f.width}×{f.height} GRID</div>
                                     </div>
+                                    {selectedFacilityId === f.id && <div className="absolute right-4 w-1.5 h-1.5 bg-brand rounded-full" />}
                                 </button>
                             ))}
                         </div>
@@ -356,50 +366,49 @@ export function Viewport() {
                 </div>
             </div>
 
+            {/* HUD Right */}
             <div className="absolute top-6 right-6 z-10 flex flex-col gap-4 pointer-events-none">
-                <div className="p-6 bg-black/90 backdrop-blur-3xl rounded-[2rem] border border-white/5 text-white w-64 shadow-2xl pointer-events-auto">
-                    <div className="text-[10px] opacity-20 mb-5 uppercase tracking-[0.4em] font-black italic">Network Matrix</div>
+                <div className="p-8 bg-white/90 backdrop-blur-3xl rounded-[2.5rem] border border-slate-200 text-slate-900 w-72 shadow-[0_20px_50px_rgba(0,0,0,0.05)] pointer-events-auto">
+                    <div className="text-[10px] text-slate-400 mb-6 uppercase tracking-[0.4em] font-black italic">Workspace Metrics</div>
                     <div className="space-y-4">
-                        <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 hover:border-brand/30 transition-colors">
-                            <span className="text-[10px] opacity-40 uppercase tracking-widest">Active Nodes</span>
-                            <span className="text-lg font-black font-mono text-brand truncate max-w-[80px]">{placedFacilities.length}</span>
+                        <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 group">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active Units</span>
+                            <span className="text-xl font-black font-mono text-slate-900">{placedFacilities.length}</span>
                         </div>
-                        <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 group hover:border-green-500/30 transition-colors">
-                            <span className="text-[10px] opacity-40 uppercase tracking-widest">Edges</span>
-                            <span className="text-lg font-black font-mono text-brand">{edges.length}</span>
+                        <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100 group">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Logistics</span>
+                            <span className="text-xl font-black font-mono text-slate-900">{edges.length}</span>
                         </div>
-                        <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 group hover:border-yellow-500/30 transition-colors">
-                            <span className="text-[10px] opacity-40 uppercase tracking-widest">Power Gen</span>
-                            <span className="text-lg font-black font-mono text-green-400">{powerStatus.total_generation.toFixed(0)}W</span>
-                        </div>
-                        <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 group hover:border-red-500/30 transition-colors">
-                            <span className="text-[10px] opacity-40 uppercase tracking-widest">Power Use</span>
-                            <span className="text-lg font-black font-mono text-red-400">{powerStatus.total_consumption.toFixed(0)}W</span>
-                        </div>
-                        <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 group hover:border-blue-500/30 transition-colors">
-                            <span className="text-[10px] opacity-40 uppercase tracking-widest">Balance</span>
-                            <span className={`text-lg font-black font-mono ${powerStatus.power_balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>{powerStatus.power_balance >= 0 ? '+' : ''}{powerStatus.power_balance.toFixed(0)}W</span>
+                        <div className="w-full h-px bg-slate-100 my-2" />
+                        <div className="flex justify-between items-center px-1">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Power Load</span>
+                            <span className={`text-sm font-black font-mono ${powerStatus.power_balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                {powerStatus.power_balance >= 0 ? '+' : ''}{powerStatus.power_balance.toFixed(0)}W
+                            </span>
                         </div>
                     </div>
-                    <button className="w-full mt-6 py-4 bg-brand rounded-2xl text-black font-black uppercase italic tracking-tighter hover:scale-[1.03] active:scale-95 transition-all shadow-[0_10px_30px_rgba(255,80,0,0.2)]">
-                        Optimize Topology
+                    <button
+                        onClick={onOpenPlanner}
+                        className="w-full mt-8 py-5 bg-slate-900 rounded-[1.5rem] text-white font-black uppercase italic tracking-tighter hover:bg-black active:scale-95 transition-all shadow-xl shadow-slate-200"
+                    >
+                        Optimize Layout
                     </button>
                 </div>
             </div>
 
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex gap-4 pointer-events-none">
-                <div className="px-8 py-4 bg-white/5 backdrop-blur-xl rounded-full border border-white/10 text-[9px] text-white/30 uppercase tracking-[0.2em] font-black">
-                    <span className="text-white/60">Shift + Drag</span> Connect Nodes
+            {/* Hint Bottom */}
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 flex gap-4 pointer-events-none">
+                <div className="px-10 py-5 bg-white border border-slate-200 rounded-full text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black shadow-xl">
+                    <span className="text-brand mr-3">SHIFT + DRAG</span> Link Power/Logistics
                 </div>
             </div>
 
-            <div className="absolute bottom-8 right-8 z-10 flex items-center gap-10 px-10 py-5 bg-black/80 backdrop-blur-3xl rounded-full border border-white/5 text-[10px] text-white/40 font-black uppercase tracking-[0.6em] pointer-events-none shadow-2xl">
-                <div className="flex items-center gap-4">
-                    <div className="w-2 h-2 rounded-full bg-brand animate-ping" />
-                    <span className="text-brand">60 FPS</span>
+            {/* Performance Overlay */}
+            <div className="absolute bottom-10 right-10 z-10 flex items-center gap-10 px-8 py-4 bg-white/50 backdrop-blur-md rounded-full border border-slate-200 text-[9px] text-slate-400 font-black uppercase tracking-[0.5em] pointer-events-none">
+                <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span>Neural Sync Stable</span>
                 </div>
-                <div className="w-px h-6 bg-white/5" />
-                <span>Neural Solver :: Active</span>
             </div>
         </div>
     );

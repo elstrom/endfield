@@ -18,6 +18,7 @@ pub struct LayoutCandidate {
     pub power_consumption: f64,
     pub items_per_hour: HashMap<String, f64>,
     pub efficiency: f64,
+    pub limiting_factor: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,12 +78,14 @@ impl LayoutGenerator {
                 (*pw, *ph)
             };
 
+            // Overlap check: separated if (A.right <= B.left || A.left >= B.right || ...)
+            // We want to return false if they overlap.
             if !(x + width <= placed.x || x >= placed.x + pw || y + height <= placed.y || y >= placed.y + ph) {
-                return true; // Collision detected
+                return false; // Overlap detected
             }
         }
 
-        false
+        true // Valid (In bounds and no collision)
     }
 
     /// Generate random layout using greedy placement
@@ -133,7 +136,7 @@ impl LayoutGenerator {
                         (*width, *height)
                     };
 
-                    if !self.is_valid_placement(x, y, final_w, final_h, &placed, facilities_meta) {
+                    if self.is_valid_placement(x, y, final_w, final_h, &placed, facilities_meta) {
                         placed.push(PlacedFacilityLayout {
                             facility_id: facility_id.clone(),
                             x,
@@ -204,9 +207,22 @@ impl LayoutGenerator {
 
         // Build facility metadata map
         let mut facilities_meta: HashMap<String, (i32, i32)> = HashMap::new();
-        for (_, facility_type, _) in &required_facilities {
+        
+        // Add power source meta (keyed by ID)
+        let power_source_name = "Protocol Automation-Core (PAC)"; // Mapping ID 'pac' to geometry name
+        if let Some(size) = self.get_facility_size(power_source_name) {
+            facilities_meta.insert(self.constraints.power_source_type.clone(), size);
+        } else {
+             // Fallback for PAC
+             facilities_meta.insert(self.constraints.power_source_type.clone(), (8, 9));
+        }
+
+        for (facility_id, facility_type, _) in &required_facilities {
             if let Some(size) = self.get_facility_size(facility_type) {
-                facilities_meta.insert(facility_type.clone(), size);
+                facilities_meta.insert(facility_id.clone(), size);
+            } else {
+                // Fallback for generic facilities
+                facilities_meta.insert(facility_id.clone(), (3, 3));
             }
         }
 
@@ -231,6 +247,7 @@ impl LayoutGenerator {
                     power_consumption,
                     items_per_hour,
                     efficiency: score / power_consumption.max(1.0),
+                    limiting_factor: None,
                 });
             }
         }

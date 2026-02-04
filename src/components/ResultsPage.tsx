@@ -13,132 +13,130 @@ interface LayoutCandidate {
     power_consumption: number;
     items_per_hour: Record<string, number>;
     efficiency: number;
+    limiting_factor?: string;
 }
 
 interface ResultsPageProps {
     layouts: LayoutCandidate[];
     onBack: () => void;
+    onApply: (layout: LayoutCandidate) => void;
 }
 
-export function ResultsPage({ layouts, onBack }: ResultsPageProps) {
+export function ResultsPage({ layouts, onBack, onApply }: ResultsPageProps) {
     const [selectedLayout, setSelectedLayout] = useState<LayoutCandidate | null>(
         layouts[0] || null
     );
 
     return (
-        <div className="w-screen h-screen bg-[#f8fafc] flex flex-col text-slate-900">
-            {/* Header */}
-            <div className="px-10 py-6 bg-white border-b border-slate-200">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-8">
-                        <button
-                            onClick={onBack}
-                            className="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-2xl transition-all active:scale-95"
-                        >
-                            <ChevronLeft className="text-slate-600" size={20} />
-                        </button>
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center">
-                                <Zap className="text-brand" size={20} fill="currentColor" />
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-black tracking-tight text-slate-900 uppercase italic">
-                                    Optimal Layout Rankings
-                                </h1>
-                                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Select candidate to preview</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-4 px-5 py-2 bg-slate-50 rounded-full border border-slate-100">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                            {layouts.length} Candidates Solved
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex-1 flex overflow-hidden">
+        <div className="w-full h-full flex flex-col text-slate-900 overflow-hidden">
+            <div className="max-w-[1400px] w-full mx-auto h-full flex bg-white/80 backdrop-blur-3xl rounded-[3rem] border border-slate-200 shadow-[0_40px_100px_rgba(0,0,0,0.1)] overflow-hidden">
                 {/* Sidebar - Ranked Candidates */}
-                <div className="w-96 bg-white border-r border-slate-200 flex flex-col">
-                    <div className="p-6 border-b border-slate-50 bg-slate-50/30">
-                        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                            Evaluation Results
-                        </h2>
+                <div className="w-96 bg-slate-50 border-r border-slate-200 flex flex-col h-full">
+                    <div className="p-8 border-b border-slate-200">
+                        <div className="flex items-center gap-4 mb-4">
+                            <button
+                                onClick={onBack}
+                                className="p-3 bg-white hover:bg-slate-100 border border-slate-200 rounded-2xl transition-all active:scale-95"
+                            >
+                                <ChevronLeft className="text-slate-600" size={20} />
+                            </button>
+                            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
+                                Solver Output
+                            </h2>
+                        </div>
+                        <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase italic">
+                            Neural <span className="text-brand">Candidates</span>
+                        </h1>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
                         {layouts.map((layout, index) => (
                             <button
                                 key={layout.id}
                                 onClick={() => setSelectedLayout(layout)}
                                 className={`w-full text-left p-6 rounded-3xl border transition-all relative overflow-hidden group ${selectedLayout?.id === layout.id
-                                        ? "bg-slate-900 border-slate-900 shadow-xl shadow-slate-200 scale-[1.02] z-10"
-                                        : "bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50/50"
+                                    ? "bg-slate-900 border-slate-900 shadow-xl shadow-slate-200 scale-[1.02] z-10"
+                                    : "bg-white border-slate-100 hover:border-brand/30 hover:bg-white"
                                     }`}
                             >
                                 <div className="flex items-center justify-between mb-4 relative z-10">
                                     <div className="flex items-center gap-3">
                                         <div
                                             className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black ${selectedLayout?.id === layout.id
-                                                    ? "bg-brand text-white"
-                                                    : "bg-slate-100 text-slate-400"
+                                                ? "bg-brand text-white"
+                                                : "bg-slate-100 text-slate-400"
                                                 }`}
                                         >
                                             {index + 1}
                                         </div>
-                                        <div className={`text-[10px] font-black uppercase tracking-widest ${selectedLayout?.id === layout.id ? "text-slate-400" : "text-slate-300"
-                                            }`}>
-                                            Layout Node
-                                        </div>
                                     </div>
                                     <div
                                         className={`text-[10px] font-mono font-bold ${selectedLayout?.id === layout.id
-                                                ? "text-brand"
-                                                : "text-slate-400"
+                                            ? "text-brand"
+                                            : "text-slate-400"
                                             }`}
                                     >
                                         SCORE {layout.score.toFixed(1)}
                                     </div>
                                 </div>
 
+                                {/* Constraint Indicator Mini */}
+                                {layout.limiting_factor && (
+                                    <div className="mb-3">
+                                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full ${selectedLayout?.id === layout.id ? "bg-red-500/20 text-red-400" : "bg-red-50 text-red-500"}`}>
+                                            Limted by {layout.limiting_factor.split(' ')[0]}
+                                        </span>
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-2 gap-4 relative z-10">
                                     <div className="space-y-1">
                                         <div className={`text-[8px] font-black uppercase tracking-widest ${selectedLayout?.id === layout.id ? "text-slate-500" : "text-slate-400"
                                             }`}>Efficiency</div>
-                                        <div className={`font-mono text-sm font-black ${selectedLayout?.id === layout.id ? "text-white" : "text-slate-700"
-                                            }`}>{(layout.efficiency * 100).toFixed(1)}%</div>
+                                        <div className={`font-mono text-sm font-black ${selectedLayout?.id === layout.id ? "text-white" : "text-slate-900"
+                                            }`}>{(layout.efficiency * 10).toFixed(1)}%</div>
                                     </div>
                                     <div className="space-y-1">
                                         <div className={`text-[8px] font-black uppercase tracking-widest ${selectedLayout?.id === layout.id ? "text-slate-500" : "text-slate-400"
-                                            }`}>Power</div>
-                                        <div className={`font-mono text-sm font-black ${selectedLayout?.id === layout.id ? "text-brand" : "text-slate-700"
+                                            }`}>Energy</div>
+                                        <div className={`font-mono text-sm font-black ${selectedLayout?.id === layout.id ? "text-brand" : "text-slate-900"
                                             }`}>{layout.power_consumption.toFixed(0)}W</div>
                                     </div>
                                 </div>
-
-                                {selectedLayout?.id === layout.id && (
-                                    <div className="absolute right-0 top-0 h-full w-1 bg-brand" />
-                                )}
                             </button>
                         ))}
                     </div>
                 </div>
 
                 {/* Inspection Panel */}
-                <div className="flex-1 bg-slate-50/50 p-10 overflow-y-auto">
+                <div className="flex-1 bg-white p-12 overflow-y-auto">
                     {selectedLayout ? (
-                        <div className="max-w-5xl mx-auto">
+                        <div className="max-w-4xl mx-auto">
+
+                            {/* Constraint Visualizer */}
+                            {selectedLayout.limiting_factor && (
+                                <div className="mb-10 bg-red-50 border border-red-100 rounded-[2rem] p-8 flex items-start gap-6 relative overflow-hidden">
+                                    <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center shrink-0 z-10">
+                                        <Layers className="text-red-500" size={24} />
+                                    </div>
+                                    <div className="z-10">
+                                        <h3 className="text-red-900 font-black text-xl uppercase italic tracking-tighter mb-2">Throughput Constrained</h3>
+                                        <p className="text-red-700/60 font-medium text-sm leading-relaxed">
+                                            Production is limited by <b className="text-red-900">{selectedLayout.limiting_factor}</b>.
+                                            The target rate cannot be physically achieved within the current parameters.
+                                        </p>
+                                    </div>
+                                    {/* Background Decor */}
+                                    <div className="absolute -right-10 -top-10 w-40 h-40 bg-red-500/5 rounded-full blur-3xl"></div>
+                                </div>
+                            )}
+
                             {/* Analytics Grid */}
-                            <div className="grid grid-cols-3 gap-6 mb-10">
-                                <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm">
+                            <div className="grid grid-cols-3 gap-6 mb-12">
+                                <div className="bg-slate-50 rounded-[2.5rem] border border-slate-100 p-8">
                                     <div className="flex items-center gap-4 mb-4">
-                                        <div className="p-3 bg-brand/10 rounded-2xl">
-                                            <Zap className="text-brand" size={20} fill="currentColor" />
-                                        </div>
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                            Power Consumption
-                                        </div>
+                                        <Zap className="text-brand" size={20} fill="currentColor" />
+                                        <div className="text-[9px] font-black uppercase tracking-widest text-slate-400"> Power Consumption </div>
                                     </div>
                                     <div className="text-4xl font-black font-mono text-slate-900">
                                         {selectedLayout.power_consumption.toFixed(0)}
@@ -146,61 +144,55 @@ export function ResultsPage({ layouts, onBack }: ResultsPageProps) {
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm">
+                                <div className="bg-slate-50 rounded-[2.5rem] border border-slate-100 p-8">
                                     <div className="flex items-center gap-4 mb-4">
-                                        <div className="p-3 bg-green-500/10 rounded-2xl">
-                                            <TrendingUp className="text-green-500" size={20} />
-                                        </div>
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                            Route Efficiency
-                                        </div>
+                                        <TrendingUp className="text-green-500" size={20} />
+                                        <div className="text-[9px] font-black uppercase tracking-widest text-slate-400"> Topology Score </div>
                                     </div>
                                     <div className="text-4xl font-black font-mono text-green-500">
-                                        {(selectedLayout.efficiency * 100).toFixed(1)}
+                                        {(selectedLayout.efficiency * 10).toFixed(1)}
                                         <span className="text-sm text-green-500/30 ml-2">%</span>
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm">
+                                <div className="bg-slate-50 rounded-[2.5rem] border border-slate-100 p-8">
                                     <div className="flex items-center gap-4 mb-4">
-                                        <div className="p-3 bg-slate-900/5 rounded-2xl">
-                                            <Layers className="text-slate-900" size={20} />
-                                        </div>
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                            Facility Count
-                                        </div>
+                                        <Layers className="text-slate-900" size={20} />
+                                        <div className="text-[9px] font-black uppercase tracking-widest text-slate-400"> Unit Density </div>
                                     </div>
                                     <div className="text-4xl font-black font-mono text-slate-900">
                                         {selectedLayout.facilities.length}
-                                        <span className="text-sm text-slate-300 ml-2">Units</span>
+                                        <span className="text-sm text-slate-300 ml-2">Nodes</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Detailed Statistics */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm">
-                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">
-                                        Production Capacity
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                <div className="bg-white border border-slate-200 rounded-[2.5rem] p-10 shadow-sm">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+                                        <div className="w-1.5 h-3 bg-brand rounded-full" />
+                                        Output Forecast
                                     </h3>
-                                    <div className="space-y-4">
+                                    <div className="space-y-6">
                                         {Object.entries(selectedLayout.items_per_hour).map(
                                             ([itemId, rate]) => (
                                                 <div
                                                     key={itemId}
-                                                    className="flex items-center justify-between border-b border-slate-50 pb-4 last:border-0"
+                                                    className="flex items-center justify-between border-b border-slate-50 pb-6 last:border-0"
                                                 >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-2 h-2 rounded-full bg-brand" />
-                                                        <span className="text-slate-900 font-bold">{itemId}</span>
+                                                    <div>
+                                                        <div className="text-slate-900 font-black text-lg tracking-tight">{itemId.replace('item_', '').replace('_', ' ')}</div>
+                                                        <div className="text-brand text-[8px] font-black uppercase tracking-widest mt-1">Neural Target Verified</div>
                                                     </div>
                                                     <div className="flex flex-col items-end">
-                                                        <span className="text-slate-900 font-mono font-black text-sm">
-                                                            {rate.toFixed(1)}/h
-                                                        </span>
-                                                        <span className="text-[9px] text-slate-400 uppercase font-bold">
-                                                            {(rate / 60).toFixed(2)} per minute
-                                                        </span>
+                                                        <div className="text-slate-900 font-black font-mono text-xl tracking-tighter">
+                                                            {rate.toFixed(1)}
+                                                            <span className="text-[10px] text-slate-300 ml-1">U/H</span>
+                                                        </div>
+                                                        <div className="text-[9px] text-slate-400 font-bold mt-1">
+                                                            {(rate / 60).toFixed(2)} / minute
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )
@@ -208,33 +200,39 @@ export function ResultsPage({ layouts, onBack }: ResultsPageProps) {
                                     </div>
                                 </div>
 
-                                <div className="bg-slate-900 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden group">
+                                <div className="bg-slate-900 rounded-[2.5rem] p-10 relative overflow-hidden group">
                                     <div className="relative z-10 flex flex-col h-full justify-between">
                                         <div>
-                                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">
-                                                Topological Preview
+                                            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-8">
+                                                <Zap className="text-brand" size={24} fill="currentColor" />
+                                            </div>
+                                            <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-4">
+                                                Deploy Matrix
                                             </h3>
-                                            <p className="text-white/60 text-sm leading-relaxed max-w-xs font-medium">
-                                                Visualisasi 2D map untuk layout terpilih. PAC diletakkan otomatis di tengah area produksi.
+                                            <p className="text-white/40 text-sm leading-relaxed font-bold">
+                                                Applying this configuration will synchronize all building coordinates and power routes to your workspace.
                                             </p>
                                         </div>
 
-                                        <button className="mt-8 py-4 bg-brand rounded-2xl text-white font-black uppercase tracking-tight flex items-center justify-center gap-3 hover:scale-105 transition-all shadow-xl shadow-brand/20">
-                                            <MousePointer2 size={18} />
-                                            Select & Apply Layout
+                                        <button
+                                            onClick={() => selectedLayout && onApply(selectedLayout)}
+                                            className="mt-12 py-5 bg-brand rounded-2xl text-white font-black uppercase italic tracking-tighter flex items-center justify-center gap-3 hover:scale-105 transition-all shadow-xl shadow-brand/20"
+                                        >
+                                            <MousePointer2 size={20} />
+                                            Apply Configuration
                                         </button>
                                     </div>
 
                                     {/* Decorator */}
-                                    <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-brand/5 rounded-full blur-3xl group-hover:bg-brand/10 transition-all" />
+                                    <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-brand/10 rounded-full blur-[100px] group-hover:bg-brand/20 transition-all duration-1000" />
                                 </div>
                             </div>
                         </div>
                     ) : (
                         <div className="flex items-center justify-center h-full">
-                            <div className="text-slate-300 text-center">
-                                <Plus className="mx-auto mb-4 opacity-20" size={48} />
-                                <div className="text-sm font-black uppercase tracking-widest">No layout selected</div>
+                            <div className="text-slate-200 text-center">
+                                <Plus className="mx-auto mb-6 opacity-20" size={64} />
+                                <div className="text-xs font-black uppercase tracking-[0.5em] opacity-30">No selection</div>
                             </div>
                         </div>
                     )}

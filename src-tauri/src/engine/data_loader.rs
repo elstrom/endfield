@@ -20,7 +20,7 @@ impl DataLoader {
     }
 
     pub fn load_facilities() -> Vec<Facility> {
-        let paths = ["data/facilities.json", "src-tauri/data/facilities.json"];
+        let paths = ["data/facilities_complete.json", "src-tauri/data/facilities_complete.json", "data/facilities.json", "src-tauri/data/facilities.json"];
         for path in paths {
             if let Ok(content) = fs::read_to_string(path) {
                 if let Ok(json) = serde_json::from_str(&content) {
@@ -32,7 +32,7 @@ impl DataLoader {
     }
 
     pub fn load_items() -> Vec<Item> {
-        let paths = ["data/items.json", "src-tauri/data/items.json"];
+        let paths = ["data/items_complete.json", "src-tauri/data/items_complete.json", "data/items.json", "src-tauri/data/items.json"];
         for path in paths {
             if let Ok(content) = fs::read_to_string(path) {
                 if let Ok(json) = serde_json::from_str(&content) {
@@ -44,7 +44,7 @@ impl DataLoader {
     }
 
     pub fn load_recipes() -> Vec<Recipe> {
-        let paths = ["data/recipes.json", "src-tauri/data/recipes.json"];
+        let paths = ["data/recipes_complete.json", "src-tauri/data/recipes_complete.json", "data/recipes.json", "src-tauri/data/recipes.json"];
         for path in paths {
             if let Ok(content) = fs::read_to_string(path) {
                 if let Ok(json) = serde_json::from_str(&content) {

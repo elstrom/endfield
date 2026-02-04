@@ -58,6 +58,29 @@
     "power_consumption": 5.0
   },
   {
+    "type": "Shredding Unit",
+    "width": 3,
+    "height": 3,
+    "visual_color": "0xaaaaaa",
+    "ports": [
+      {
+        "id": "in_1",
+        "type": "input",
+        "x": 2,
+        "y": 0,
+        "direction": "left"
+      },
+      {
+        "id": "out_2",
+        "type": "output",
+        "x": 0,
+        "y": 0,
+        "direction": "left"
+      }
+    ],
+    "power_consumption": 5.0
+  },
+  {
     "type": "Fitting Unit",
     "width": 3,
     "height": 3,

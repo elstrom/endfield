@@ -1,0 +1,590 @@
+[
+  {
+    "id": "item_originium_ore",
+    "name": "Originium Ore",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_quartz_sand",
+    "name": "Amethyst Ore",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_iron_ore",
+    "name": "Ferrium Ore",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_liquid_water",
+    "name": "Clean Water",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_moss_1",
+    "name": "Buckflower",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_moss_seed_1",
+    "name": "Buckflower Seed",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_moss_2",
+    "name": "Citrome",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_moss_seed_2",
+    "name": "Citrome Seed",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_moss_3",
+    "name": "Sandleaf",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_moss_seed_3",
+    "name": "Sandleaf Seed",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_bbflower_1",
+    "name": "Aketine",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_bbflower_seed_1",
+    "name": "Aketine Seed",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_grass_1",
+    "name": "Jincao",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_grass_seed_1",
+    "name": "Jincao Seed",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_grass_2",
+    "name": "Yazhen",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_grass_seed_2",
+    "name": "Yazhen Seed",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_sp_1",
+    "name": "Reed Rye",
+    "tier": 2,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_sp_2",
+    "name": "Tartpepper",
+    "tier": 2,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_sp_3",
+    "name": "Redjade Ginseng",
+    "tier": 2,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_sp_4",
+    "name": "Amber Rice",
+    "tier": 2,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_sp_seed_1",
+    "name": "Reed Rye Seed",
+    "tier": 2,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_sp_seed_2",
+    "name": "Tartpepper Seed",
+    "tier": 2,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_sp_seed_3",
+    "name": "Redjade Ginseng Seed",
+    "tier": 2,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_sp_seed_4",
+    "name": "Amber Rice Seed",
+    "tier": 2,
+    "is_raw": true
+  },
+  {
+    "id": "item_plant_tundra_wood",
+    "name": "Wood",
+    "tier": 1,
+    "is_raw": true
+  },
+  {
+    "id": "item_carbon_mtl",
+    "name": "Carbon",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_crystal_shell",
+    "name": "Origocrust",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_quartz_glass",
+    "name": "Amethyst Fiber",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_iron_nugget",
+    "name": "Ferrium",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_originium_powder",
+    "name": "Originium Powder",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_carbon_powder",
+    "name": "Carbon Powder",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_crystal_powder",
+    "name": "Origocrust Powder",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_quartz_powder",
+    "name": "Amethyst Powder",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_iron_powder",
+    "name": "Ferrium Powder",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_plant_moss_powder_3",
+    "name": "Sandleaf Powder",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_plant_bbflower_powder_1",
+    "name": "Aketine Powder",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_originium_enr_powder",
+    "name": "Dense Originium Powder",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_carbon_enr_powder",
+    "name": "Dense Carbon Powder",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_crystal_enr_powder",
+    "name": "Dense Origocrust Powder",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_quartz_enr_powder",
+    "name": "Cryston Powder",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_iron_enr_powder",
+    "name": "Dense Ferrium Powder",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_plant_moss_enr_powder_1",
+    "name": "Ground Buckflower Powder",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_plant_moss_enr_powder_2",
+    "name": "Ground Citrome Powder",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_carbon_enr",
+    "name": "Stabilized Carbon",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_crystal_enr",
+    "name": "Packed Origocrust",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_quartz_enr",
+    "name": "Cryston Fiber",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_iron_enr",
+    "name": "Steel",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_muck_xiranite_1",
+    "name": "Bumper-Rich",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_glass_grass_1",
+    "name": "Amethyst Bottle",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_glass_grass_2",
+    "name": "Amethyst Bottle",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_glass_water",
+    "name": "Amethyst Bottle",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_glass_xiranite",
+    "name": "Amethyst Bottle",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_glass_bottle",
+    "name": "Amethyst Bottle",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_glassenr_grass_1",
+    "name": "Cryston Bottle",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_glassenr_grass_2",
+    "name": "Cryston Bottle",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_glassenr_water",
+    "name": "Cryston Bottle",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_glassenr_xiranite",
+    "name": "Cryston Bottle",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_glass_enr_bottle",
+    "name": "Cryston Bottle",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_iron_grass_1",
+    "name": "Ferrium Bottle",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_iron_grass_2",
+    "name": "Ferrium Bottle",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_iron_water",
+    "name": "Ferrium Bottle",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_iron_xiranite",
+    "name": "Ferrium Bottle",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_iron_bottle",
+    "name": "Ferrium Bottle",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_ironenr_grass_1",
+    "name": "Steel Bottle",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_ironenr_grass_2",
+    "name": "Steel Bottle",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_ironenr_water",
+    "name": "Steel Bottle",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_fbottle_ironenr_xiranite",
+    "name": "Steel Bottle",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_iron_enr_bottle",
+    "name": "Steel Bottle",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_xiranite_powder",
+    "name": "Xiranite",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_proc_battery_1",
+    "name": "LC Valley Battery",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_proc_battery_2",
+    "name": "SC Valley Battery",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_proc_battery_3",
+    "name": "HC Valley Battery",
+    "tier": 4,
+    "is_raw": false
+  },
+  {
+    "id": "item_proc_battery_4",
+    "name": "LC Wuling Battery",
+    "tier": 4,
+    "is_raw": false
+  },
+  {
+    "id": "item_glass_cmpt",
+    "name": "Amethyst Part",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_glass_enr_cmpt",
+    "name": "Cryston Part",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_iron_cmpt",
+    "name": "Ferrium Part",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_iron_enr_cmpt",
+    "name": "Steel Part",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_equip_script_1",
+    "name": "Amethyst Component",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_equip_script_2",
+    "name": "Ferrium Component",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_equip_script_3",
+    "name": "Cryston Component",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_equip_script_4",
+    "name": "Xiranite Component",
+    "tier": 4,
+    "is_raw": false
+  },
+  {
+    "id": "item_liquid_plant_grass_1",
+    "name": "Jincao Solution",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_liquid_plant_grass_2",
+    "name": "Yazhen Solution",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_liquid_xiranite",
+    "name": "Liquid Xiranite",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_bottled_food_1",
+    "name": "Canned Citrome [C]",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_bottled_food_2",
+    "name": "Canned Citrome [B]",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_bottled_food_3",
+    "name": "Canned Citrome [A]",
+    "tier": 4,
+    "is_raw": false
+  },
+  {
+    "id": "item_bottled_food_4",
+    "name": "Jincao Drink",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_bottled_rec_hp_1",
+    "name": "Buck Capsule [C]",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_bottled_rec_hp_2",
+    "name": "Buck Capsule [B]",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_bottled_rec_hp_3",
+    "name": "Buck Capsule [A]",
+    "tier": 4,
+    "is_raw": false
+  },
+  {
+    "id": "item_bottled_rec_hp_4",
+    "name": "Yazhen Syringe [C]",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_plant_moss_powder_1",
+    "name": "Buckflower Powder",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_plant_moss_powder_2",
+    "name": "Citrome Powder",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_plant_grass_powder_1",
+    "name": "Jincao Powder",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_plant_grass_powder_2",
+    "name": "Yazhen Powder",
+    "tier": 2,
+    "is_raw": false
+  },
+  {
+    "id": "item_proc_bomb_1",
+    "name": "Industrial Explosive",
+    "tier": 3,
+    "is_raw": false
+  },
+  {
+    "id": "item_muck_feces_1",
+    "name": "Burdo-Muck",
+    "tier": 1,
+    "is_raw": true
+  }
+]

@@ -111,17 +111,22 @@ fn generate_optimal_layouts(request: GenerateLayoutsRequest) -> Result<Vec<crate
         }
     }).collect();
     
-    // Solve production plan
-    let solver = crate::engine::recipe_solver::RecipeSolver::new(solver_recipes, facilities_map.clone());
-    let production_plan = solver.solve(request.target_items.clone())?;
-    
-    println!("DEBUG: Production plan requires {} facility types", production_plan.required_facilities.len());
+    // Solve for requirements
+    let solver = crate::engine::recipe_solver::RecipeSolver::new(solver_recipes, facilities_map);
+    let plan = solver.solve(
+        request.target_items.clone(),
+        request.plate_width,
+        request.plate_height,
+    ).map_err(|e| e.to_string())?;
+
+    println!("DEBUG: Plan generated. Power: {}, Limited: {}", plan.total_power, plan.constraint_limited);
+    println!("DEBUG: Production plan requires {} facility types", plan.required_facilities.len());
     
     // Generate layouts - Note: PAC is now handled automatically in layout_generator
     let constraints = crate::engine::layout_generator::LayoutConstraints {
         plate_width: request.plate_width,
         plate_height: request.plate_height,
-        power_source_type: "facility_hub_pac".to_string(), // Automated PAC ID
+        power_source_type: "pac".to_string(), // Consistently use 'pac'
         power_source_x: 0, // Will be set by generator
         power_source_y: 0, // Will be set by generator
         max_power_budget: None,
@@ -129,18 +134,34 @@ fn generate_optimal_layouts(request: GenerateLayoutsRequest) -> Result<Vec<crate
     
     let generator = crate::engine::layout_generator::LayoutGenerator::new(constraints, geometry);
     
-    let required_facilities: Vec<(String, String, f64)> = production_plan.required_facilities.iter()
+    let required_facilities: Vec<(String, String, f64)> = plan.required_facilities.iter()
         .map(|req| (req.facility_id.clone(), req.facility_type.clone(), req.count))
         .collect();
     
+    // Use actual rates from plan (potentially constrained)
+    let actual_target_items: Vec<(String, f64)> = plan.actual_rates.iter()
+        .map(|(k, v)| (k.clone(), *v))
+        .collect();
+
     let mut candidates = generator.generate_layouts(
         required_facilities,
-        &request.target_items,
+        &actual_target_items,
         request.num_candidates,
     );
     
+    // Attach constraint info
+    for candidate in &mut candidates {
+        candidate.limiting_factor = plan.limiting_factor.clone();
+    }
+
+    println!("DEBUG: Generator returned {} candidates", candidates.len());
+    
     // Take top 5
     candidates.truncate(5);
+    
+    if candidates.is_empty() {
+        return Err("No valid layouts could be generated within the given constraints. Try a larger board.".to_string());
+    }
     
     println!("DEBUG: Generated {} layout candidates", candidates.len());
     

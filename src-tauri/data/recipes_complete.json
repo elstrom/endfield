@@ -1,0 +1,1180 @@
+[
+  {
+    "id": "component_glass_cmpt_1",
+    "inputs": [
+      {
+        "item_id": "item_quartz_glass",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_glass_cmpt",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_cmpt_mc_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "component_glass_enr_cmpt_1",
+    "inputs": [
+      {
+        "item_id": "item_quartz_enr",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_glass_enr_cmpt",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_cmpt_mc_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "component_iron_cmpt_1",
+    "inputs": [
+      {
+        "item_id": "item_iron_nugget",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_iron_cmpt",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_cmpt_mc_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "component_iron_enr_cmpt_1",
+    "inputs": [
+      {
+        "item_id": "item_iron_enr",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_iron_enr_cmpt",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_cmpt_mc_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_glass_grass_1_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_glass_grass_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_glass_grass_2_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_glass_grass_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_glass_water_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_glass_water",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_glass_xiranite_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_glass_xiranite",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_glassenr_grass_1_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_glassenr_grass_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_glassenr_grass_2_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_glassenr_grass_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_glassenr_water_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_glassenr_water",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_glassenr_xiranite_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_glassenr_xiranite",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_iron_grass_1_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_iron_grass_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_iron_grass_2_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_iron_grass_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_iron_water_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_iron_water",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_iron_xiranite_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_iron_xiranite",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_ironenr_grass_1_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_ironenr_grass_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_ironenr_grass_2_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_ironenr_grass_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_ironenr_water_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_ironenr_water",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "dismantler_ironenr_xiranite_1",
+    "inputs": [
+      {
+        "item_id": "item_fbottle_ironenr_xiranite",
+        "amount": 1
+      }
+    ],
+    "outputs": [],
+    "facility_id": "",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_carbon_enr_1",
+    "inputs": [
+      {
+        "item_id": "item_carbon_enr_powder",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_enr",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_carbon_enr_powder_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_enr_powder_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_enr_powder",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_carbon_enr_powder_2",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_enr_powder_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_enr_powder",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_carbon_material_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_mtl",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_carbon_material_2",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_mtl",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_carbon_material_3",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_3",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_mtl",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_carbon_material_4",
+    "inputs": [
+      {
+        "item_id": "item_plant_tundra_wood",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_mtl",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_carbon_material_5",
+    "inputs": [
+      {
+        "item_id": "item_plant_grass_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_mtl",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_carbon_material_6",
+    "inputs": [
+      {
+        "item_id": "item_plant_grass_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_mtl",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_carbon_powder_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_powder_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_powder",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_carbon_powder_2",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_powder_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_powder",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_carbon_powder_3",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_powder_3",
+        "amount": 3
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_powder",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_carbon_powder_4",
+    "inputs": [
+      {
+        "item_id": "item_plant_grass_powder_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_powder",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_carbon_powder_5",
+    "inputs": [
+      {
+        "item_id": "item_plant_grass_powder_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_powder",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_crystal_enr_1",
+    "inputs": [
+      {
+        "item_id": "item_crystal_enr_powder",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_crystal_enr",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_crystal_enr_powder_1",
+    "inputs": [
+      {
+        "item_id": "item_originium_enr_powder",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_crystal_enr_powder",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_crystal_powder_1",
+    "inputs": [
+      {
+        "item_id": "item_originium_powder",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_crystal_powder",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_crystal_shell_1",
+    "inputs": [
+      {
+        "item_id": "item_originium_ore",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_crystal_shell",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_crystal_shell_2",
+    "inputs": [
+      {
+        "item_id": "item_crystal_powder",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_crystal_shell",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_iron_enr_1",
+    "inputs": [
+      {
+        "item_id": "item_iron_enr_powder",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_iron_enr",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_iron_nugget_1",
+    "inputs": [
+      {
+        "item_id": "item_iron_ore",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_iron_nugget",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_iron_nugget_2",
+    "inputs": [
+      {
+        "item_id": "item_iron_powder",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_iron_nugget",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_quartz_enr_1",
+    "inputs": [
+      {
+        "item_id": "item_quartz_enr_powder",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_quartz_enr",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_quartz_glass_1",
+    "inputs": [
+      {
+        "item_id": "item_quartz_sand",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_quartz_glass",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "furnance_quartz_glass_2",
+    "inputs": [
+      {
+        "item_id": "item_quartz_powder",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_quartz_glass",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_furnance_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "grinder_carbon_powder_1",
+    "inputs": [
+      {
+        "item_id": "item_carbon_mtl",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_carbon_powder",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_grinder_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "grinder_crystal_powder_1",
+    "inputs": [
+      {
+        "item_id": "item_crystal_shell",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_crystal_powder",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_grinder_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "grinder_iron_powder_1",
+    "inputs": [
+      {
+        "item_id": "item_iron_nugget",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_iron_powder",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_grinder_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "grinder_originium_powder_1",
+    "inputs": [
+      {
+        "item_id": "item_originium_ore",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_originium_powder",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_grinder_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "grinder_plant_bbflower_powder_1_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_bbflower_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_bbflower_powder_1",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_grinder_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "grinder_plant_grass_powder_1_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_grass_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_grass_powder_1",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_grinder_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "grinder_plant_grass_powder_2_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_grass_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_grass_powder_2",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_grinder_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "grinder_plant_moss_powder_1_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_moss_powder_1",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_grinder_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "grinder_plant_moss_powder_2_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_moss_powder_2",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_grinder_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "grinder_plant_moss_powder_3_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_3",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_moss_powder_3",
+        "amount": 3
+      }
+    ],
+    "facility_id": "item_port_grinder_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "grinder_quartz_powder_1",
+    "inputs": [
+      {
+        "item_id": "item_quartz_glass",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_quartz_powder",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_grinder_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "planter_plant_bbflower_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_bbflower_seed_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_bbflower_1",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_planter_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "planter_plant_moss_1_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_seed_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_moss_1",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_planter_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "planter_plant_moss_2_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_seed_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_moss_2",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_planter_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "planter_plant_moss_3_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_seed_3",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_moss_3",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_planter_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "seedcollector_plant_bbflower_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_bbflower_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_bbflower_seed_1",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_seedcol_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "seedcollector_plant_grass_1_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_grass_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_grass_seed_1",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_seedcol_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "seedcollector_plant_grass_2_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_grass_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_grass_seed_2",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_seedcol_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "seedcollector_plant_moss_1_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_moss_seed_1",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_seedcol_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "seedcollector_plant_moss_2_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_moss_seed_2",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_seedcol_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "seedcollector_plant_moss_3_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_moss_3",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_moss_seed_3",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_seedcol_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "seedcollector_plant_sp_1",
+    "inputs": [
+      {
+        "item_id": "item_plant_sp_1",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_sp_seed_1",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_seedcol_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "seedcollector_plant_sp_2",
+    "inputs": [
+      {
+        "item_id": "item_plant_sp_2",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_sp_seed_2",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_seedcol_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "seedcollector_plant_sp_3",
+    "inputs": [
+      {
+        "item_id": "item_plant_sp_3",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_sp_seed_3",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_seedcol_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "seedcollector_plant_sp_4",
+    "inputs": [
+      {
+        "item_id": "item_plant_sp_4",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_plant_sp_seed_4",
+        "amount": 2
+      }
+    ],
+    "facility_id": "item_port_seedcol_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "shaper_glass_bottle_1",
+    "inputs": [
+      {
+        "item_id": "item_quartz_glass",
+        "amount": 2
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_glass_bottle",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_shaper_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "shaper_glass_enr_bottle_1",
+    "inputs": [
+      {
+        "item_id": "item_quartz_enr",
+        "amount": 2
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_glass_enr_bottle",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_shaper_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "shaper_iron_bottle_1",
+    "inputs": [
+      {
+        "item_id": "item_iron_nugget",
+        "amount": 2
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_iron_bottle",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_shaper_1",
+    "crafting_time": 2
+  },
+  {
+    "id": "shaper_iron_enr_bottle_1",
+    "inputs": [
+      {
+        "item_id": "item_iron_enr",
+        "amount": 2
+      }
+    ],
+    "outputs": [
+      {
+        "item_id": "item_iron_enr_bottle",
+        "amount": 1
+      }
+    ],
+    "facility_id": "item_port_shaper_1",
+    "crafting_time": 2
+  }
+]

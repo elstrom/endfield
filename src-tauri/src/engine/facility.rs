@@ -6,6 +6,7 @@ pub struct Facility {
     pub name: String,
     pub width: u32,  // Ukuran dalam grid (misal: 8)
     pub height: u32, // Ukuran dalam grid (misal: 8)
+    #[serde(rename = "power")]
     pub power_consumption: f32,
     pub tier: u32,
 }
