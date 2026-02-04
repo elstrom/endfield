@@ -54,7 +54,11 @@ class FacilityEditor:
     def load_data(self):
         if os.path.exists(DATA_FILE):
             with open(DATA_FILE, 'r') as f:
-                return json.load(f)
+                data = json.load(f)
+                # Filter out logistics components that have fixed logic
+                logistics_to_skip = ["Conveyor Belt", "Splitter", "Merger", "Converger", "Belt Bridge", 
+                                   "Pipe Splitter", "Pipe Bridge", "Pipe Converger"]
+                return [fac for fac in data if fac.get('type') not in logistics_to_skip]
         return []
 
     def sort_facilities(self):

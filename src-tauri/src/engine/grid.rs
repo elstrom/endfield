@@ -1,5 +1,6 @@
 use crate::engine::facility::{PlacedFacility, Facility};
 use crate::engine::logistics::LogisticsEdge;
+use crate::engine::power_grid::PowerGrid;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -10,6 +11,10 @@ pub struct GridState {
     pub logistics_edges: Vec<LogisticsEdge>,
     #[serde(skip)]
     pub occupancy: Vec<bool>, // Fast lookup for occupancy
+    #[serde(skip)]
+    pub power_grid: PowerGrid,
+    #[serde(skip)]
+    pub grid_size: u32,
 }
 
 impl GridState {
@@ -24,7 +29,13 @@ impl GridState {
             placed_facilities: Vec::new(),
             logistics_edges: Vec::new(),
             occupancy: vec![false; ((width/grid_size) * (height/grid_size)) as usize],
+            power_grid: PowerGrid::new(),
+            grid_size,
         }
+    }
+
+    pub fn update_power_grid(&mut self, geometry: &serde_json::Value) {
+        self.power_grid.calculate(&self.placed_facilities, geometry, self.grid_size);
     }
 
     pub fn is_area_clear(&self, x: i32, y: i32, w: u32, h: u32) -> bool {

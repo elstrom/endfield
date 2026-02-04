@@ -8,17 +8,16 @@ pub struct Optimizer {
 }
 
 impl Optimizer {
-    pub async fn new() -> Self {
+    pub async fn new() -> Option<Self> {
         let instance = wgpu::Instance::default();
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions::default())
-            .await
-            .expect("Failed to find an appropriate adapter");
+            .await?;
 
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor::default(), None)
             .await
-            .expect("Failed to create device");
+            .ok()?;
 
         let device = Arc::new(device);
         let queue = Arc::new(queue);
@@ -34,11 +33,11 @@ impl Optimizer {
             cache: None,
         });
 
-        Self {
+        Some(Self {
             device,
             queue,
             pipeline,
-        }
+        })
     }
 
     pub fn evaluate(&self) {

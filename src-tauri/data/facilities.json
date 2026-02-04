@@ -1,74 +1,98 @@
 [
     {
-        "id": "port.furnace_1",
-        "name": "Furnace",
-        "width": 4,
-        "height": 4,
+        "id": "refining_unit",
+        "name": "Refining Unit",
+        "width": 3,
+        "height": 3,
         "power": 5.0,
         "tier": 1
     },
     {
-        "id": "port.grinder_1",
-        "name": "Grinder",
-        "width": 4,
+        "id": "fitting_unit",
+        "name": "Fitting Unit",
+        "width": 3,
+        "height": 3,
+        "power": 20.0,
+        "tier": 1
+    },
+    {
+        "id": "gearing_unit",
+        "name": "Gearing Unit",
+        "width": 6,
         "height": 4,
+        "power": 10.0,
+        "tier": 2
+    },
+    {
+        "id": "moulding_unit",
+        "name": "Moulding Unit",
+        "width": 3,
+        "height": 3,
+        "power": 10.0,
+        "tier": 2
+    },
+    {
+        "id": "filling_unit",
+        "name": "Filling Unit",
+        "width": 4,
+        "height": 6,
+        "power": 20.0,
+        "tier": 3
+    },
+    {
+        "id": "pac",
+        "name": "Protocol Automation-Core (PAC)",
+        "width": 8,
+        "height": 9,
+        "power": 0.0,
+        "tier": 5
+    },
+    {
+        "id": "sub_pac",
+        "name": "Sub PAC",
+        "width": 6,
+        "height": 6,
+        "power": 0.0,
+        "tier": 4
+    },
+    {
+        "id": "protocol_stash",
+        "name": "Protocol Stash",
+        "width": 3,
+        "height": 3,
         "power": 5.0,
-        "tier": 1
-    },
-    {
-        "id": "port.planter_1",
-        "name": "Planter",
-        "width": 8,
-        "height": 8,
-        "power": 20.0,
         "tier": 3
     },
     {
-        "id": "port.winder_1",
-        "name": "Winder",
-        "width": 4,
-        "height": 4,
-        "power": 10.0,
+        "id": "thermal_bank",
+        "name": "Thermal Bank",
+        "width": 2,
+        "height": 2,
+        "power": 0.0,
+        "tier": 2
+    },
+    {
+        "id": "power_diffuser",
+        "name": "Power Diffuser",
+        "width": 1,
+        "height": 1,
+        "power": 0.0,
         "tier": 1
     },
     {
-        "id": "port.shaper_1",
-        "name": "Shaper",
-        "width": 6,
-        "height": 6,
-        "power": 10.0,
-        "tier": 2
+        "id": "depot_loader",
+        "name": "Depot Loader",
+        "width": 1,
+        "height": 3,
+        "power": 0.0,
+        "tier": 1
     },
     {
-        "id": "port.cmpt_mc_1",
-        "name": "Component Machine",
-        "width": 6,
-        "height": 6,
-        "power": 20.0,
-        "tier": 2
-    },
-    {
-        "id": "port.mix_pool_1",
-        "name": "Mix Pool",
-        "width": 10,
-        "height": 10,
-        "power": 50.0,
-        "tier": 3
-    },
-    {
-        "id": "port.thickener_1",
-        "name": "Thickener",
-        "width": 8,
-        "height": 8,
-        "power": 50.0,
-        "tier": 4
-    },
-    {
-        "id": "port.oven_1",
-        "name": "Xiranite Oven",
-        "width": 13,
-        "height": 4,
-        "power": 50.0,
-        "tier": 4
+        "id": "depot_unloader",
+        "name": "Depot Unloader",
+        "width": 1,
+        "height": 3,
+        "power": 0.0,
+        "tier": 1
     }
 ]

@@ -19,21 +19,53 @@ export function Viewport() {
     const containerRef = useRef<HTMLDivElement>(null);
     const appRef = useRef<Application | null>(null);
     const worldRef = useRef<Container | null>(null);
-    const [appData, setAppData] = useState<{ facilities: any[], items: any[], recipes: any[], config: any }>({
+    const [appData, setAppData] = useState<{ facilities: any[], items: any[], recipes: any[], config: any, geometry: any[] }>({
         facilities: [],
         items: [],
         recipes: [],
-        config: null
+        config: null,
+        geometry: []
     });
-    const { placedFacilities, edges, addFacility, addEdge, isColliding } = useSandbox();
+    const { placedFacilities, edges, addFacility, addEdge, isColliding, rotateFacility } = useSandbox();
     const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
+    const [powerStatus, setPowerStatus] = useState<any>({ total_generation: 0, total_consumption: 0, power_balance: 0, powered_count: 0 });
 
     useEffect(() => {
-        invoke("get_app_data").then((data: any) => setAppData(data));
+        invoke("get_app_data")
+            .then((data: any) => {
+                console.log("App data loaded:", data);
+                setAppData(data);
+            })
+            .catch(err => console.error("Failed to load app data:", err));
+    }, []);
+
+    // Poll power status
+    useEffect(() => {
+        const interval = setInterval(() => {
+            invoke("get_power_status")
+                .then((status: any) => setPowerStatus(status))
+                .catch(err => console.error("Power status poll error:", err));
+        }, 1000);
+        return () => clearInterval(interval);
     }, []);
 
     const config = appData.config;
     const GRID_SIZE = config?.simulation?.grid_size || 32;
+
+    // Helper: Transform port coordinates based on rotation
+    const getRotatedPortPosition = (port: any, width: number, height: number, rotation: number) => {
+        let { x, y } = port;
+        const rot = rotation % 360;
+
+        if (rot === 90) {
+            return { x: height - 1 - y, y: x };
+        } else if (rot === 180) {
+            return { x: width - 1 - x, y: height - 1 - y };
+        } else if (rot === 270) {
+            return { x: y, y: width - 1 - x };
+        }
+        return { x, y };
+    };
 
     // Scene Rendering
     useEffect(() => {
@@ -79,24 +111,50 @@ export function Viewport() {
             // Draw Facilities
             for (const pf of placedFacilities) {
                 const meta = appData.facilities.find(f => f.id === pf.facilityId);
+                const geom = appData.geometry.find((g: any) => g.type === meta?.name);
                 if (!meta) continue;
 
                 const iconPath = `/images/facilities/${pf.facilityId}.png`;
                 try {
                     const texture = await Assets.load(iconPath);
                     const sprite = new Sprite(texture);
-                    sprite.width = meta.width * GRID_SIZE;
-                    sprite.height = meta.height * GRID_SIZE;
+
+                    // Apply rotation
+                    const rotatedWidth = (pf.rotation === 90 || pf.rotation === 270) ? meta.height : meta.width;
+                    const rotatedHeight = (pf.rotation === 90 || pf.rotation === 270) ? meta.width : meta.height;
+
+                    sprite.width = rotatedWidth * GRID_SIZE;
+                    sprite.height = rotatedHeight * GRID_SIZE;
                     sprite.x = pf.x;
                     sprite.y = pf.y;
+                    sprite.anchor.set(0.5);
+                    sprite.x += sprite.width / 2;
+                    sprite.y += sprite.height / 2;
+                    sprite.rotation = (pf.rotation * Math.PI) / 180;
 
                     const border = new Graphics();
                     border.setStrokeStyle({ width: 1, color: parseInt(config.visuals.colors.node_border), alpha: config.visuals.opacity.node_border });
-                    border.rect(pf.x, pf.y, sprite.width, sprite.height);
+                    border.rect(pf.x, pf.y, rotatedWidth * GRID_SIZE, rotatedHeight * GRID_SIZE);
                     border.stroke();
 
                     facilitiesLayer.addChild(sprite);
                     facilitiesLayer.addChild(border);
+
+                    // Draw Ports
+                    if (geom?.ports) {
+                        for (const port of geom.ports) {
+                            const rotatedPos = getRotatedPortPosition(port, meta.width, meta.height, pf.rotation);
+                            const portX = pf.x + rotatedPos.x * GRID_SIZE + GRID_SIZE / 2;
+                            const portY = pf.y + rotatedPos.y * GRID_SIZE + GRID_SIZE / 2;
+
+                            const portCircle = new Graphics();
+                            const portColor = port.type === 'input' ? 0x22c55e : 0xef4444;
+                            portCircle.beginFill(portColor, 0.8);
+                            portCircle.drawCircle(portX, portY, 4);
+                            portCircle.endFill();
+                            facilitiesLayer.addChild(portCircle);
+                        }
+                    }
                 } catch (e) {
                     const rect = new Graphics();
                     rect.beginFill(0x222222);
@@ -157,7 +215,11 @@ export function Viewport() {
                         localPos.y >= pf.y && localPos.y <= pf.y + meta.height * GRID_SIZE;
                 });
 
-                if (e.shiftKey && target) {
+                if (e.button === 2 && target) {
+                    // Right-click to rotate
+                    e.preventDefault();
+                    rotateFacility(target.instanceId);
+                } else if (e.shiftKey && target) {
                     isConnecting = true;
                     connectionStartId = target.instanceId;
                 } else if (e.button === 1 || (e.button === 0 && e.altKey)) {
@@ -172,6 +234,19 @@ export function Viewport() {
                         if (meta && !window.isColliding(snapX, snapY, meta.width, meta.height, window.appData.facilities)) {
                             window.addFacility(window.selectedFacilityId, snapX, snapY);
                         }
+                    }
+                }
+            });
+
+            // Disable context menu
+            app.canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+            // Keyboard shortcuts
+            window.addEventListener("keydown", (e) => {
+                if (e.key === "r" || e.key === "R") {
+                    const hoveredFacility = window.placedFacilities[window.placedFacilities.length - 1];
+                    if (hoveredFacility) {
+                        rotateFacility(hoveredFacility.instanceId);
                     }
                 }
             });
@@ -292,6 +367,18 @@ export function Viewport() {
                         <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 group hover:border-green-500/30 transition-colors">
                             <span className="text-[10px] opacity-40 uppercase tracking-widest">Edges</span>
                             <span className="text-lg font-black font-mono text-brand">{edges.length}</span>
+                        </div>
+                        <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 group hover:border-yellow-500/30 transition-colors">
+                            <span className="text-[10px] opacity-40 uppercase tracking-widest">Power Gen</span>
+                            <span className="text-lg font-black font-mono text-green-400">{powerStatus.total_generation.toFixed(0)}W</span>
+                        </div>
+                        <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 group hover:border-red-500/30 transition-colors">
+                            <span className="text-[10px] opacity-40 uppercase tracking-widest">Power Use</span>
+                            <span className="text-lg font-black font-mono text-red-400">{powerStatus.total_consumption.toFixed(0)}W</span>
+                        </div>
+                        <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 group hover:border-blue-500/30 transition-colors">
+                            <span className="text-[10px] opacity-40 uppercase tracking-widest">Balance</span>
+                            <span className={`text-lg font-black font-mono ${powerStatus.power_balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>{powerStatus.power_balance >= 0 ? '+' : ''}{powerStatus.power_balance.toFixed(0)}W</span>
                         </div>
                     </div>
                     <button className="w-full mt-6 py-4 bg-brand rounded-2xl text-black font-black uppercase italic tracking-tighter hover:scale-[1.03] active:scale-95 transition-all shadow-[0_10px_30px_rgba(255,80,0,0.2)]">

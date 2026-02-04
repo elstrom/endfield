@@ -83,11 +83,22 @@ export function useSandbox() {
         });
     }, []);
 
+    const rotateFacility = useCallback((instanceId: string) => {
+        setPlacedFacilities((prev) => prev.map(f => {
+            if (f.instanceId === instanceId) {
+                // Rotate 90 degrees clockwise (0 -> 90 -> 180 -> 270 -> 0)
+                return { ...f, rotation: (f.rotation + 90) % 360 };
+            }
+            return f;
+        }));
+    }, []);
+
     return {
         placedFacilities,
         edges,
         addFacility,
         addEdge,
         isColliding,
+        rotateFacility,
     };
 }

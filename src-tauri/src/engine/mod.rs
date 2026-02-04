@@ -1,7 +1,10 @@
 pub mod facility;
-pub mod grid;
 pub mod item;
 pub mod recipe;
-pub mod optimizer;
+pub mod grid;
 pub mod logistics;
 pub mod data_loader;
+pub mod optimizer;
+pub mod power_grid;
+pub mod recipe_solver;
+pub mod layout_generator;

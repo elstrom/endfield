@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 struct AppState {
     grid: Mutex<GridState>,
-    optimizer: Optimizer,
+    optimizer: Option<Optimizer>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,20 +17,27 @@ pub struct AppData {
     pub items: Vec<crate::engine::item::Item>,
     pub recipes: Vec<crate::engine::recipe::Recipe>,
     pub config: serde_json::Value,
+    pub geometry: serde_json::Value,
 }
 
 #[tauri::command]
 fn get_app_data() -> AppData {
-    AppData {
+    println!("DEBUG: get_app_data called");
+    let data = AppData {
         facilities: crate::engine::data_loader::DataLoader::load_facilities(),
         items: crate::engine::data_loader::DataLoader::load_items(),
         recipes: crate::engine::data_loader::DataLoader::load_recipes(),
         config: crate::engine::data_loader::DataLoader::load_config(),
-    }
+        geometry: crate::engine::data_loader::DataLoader::load_geometry(),
+    };
+    println!("DEBUG: Config loaded: {:?}", data.config);
+    println!("DEBUG: Geometry items: {}", data.geometry.as_array().map_or(0, |a| a.len()));
+    data
 }
 
 #[tauri::command]
 fn get_grid_state(state: State<'_, AppState>) -> GridState {
+    println!("DEBUG: get_grid_state called");
     let grid = state.grid.lock().unwrap();
     serde_json::from_str(&serde_json::to_string(&*grid).unwrap()).unwrap()
 }
@@ -41,16 +48,118 @@ fn update_simulation_state(
     facilities: Vec<crate::engine::facility::PlacedFacility>,
     edges: Vec<crate::engine::logistics::LogisticsEdge>,
 ) {
+    println!("DEBUG: update_simulation_state called with {} facilities", facilities.len());
     let mut grid = state.grid.lock().unwrap();
     grid.placed_facilities = facilities;
     grid.logistics_edges = edges;
-    // Rebuild occupancy if needed or other spatial indexes
+    
+    // Recalculate power grid
+    let geometry = crate::engine::data_loader::DataLoader::load_geometry();
+    grid.update_power_grid(&geometry);
+}
+
+#[tauri::command]
+fn get_power_status(state: State<'_, AppState>) -> serde_json::Value {
+    // Silent for polling but useful for initial debug
+    // println!("DEBUG: get_power_status called");
+    let grid = state.grid.lock().unwrap();
+    serde_json::json!({
+        "total_generation": grid.power_grid.total_generation,
+        "total_consumption": grid.power_grid.total_consumption,
+        "power_balance": grid.power_grid.get_power_balance(),
+        "powered_count": grid.power_grid.powered_facilities.len(),
+    })
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct GenerateLayoutsRequest {
+    target_items: Vec<(String, f64)>, // (item_id, rate_per_minute)
+    plate_width: i32,
+    plate_height: i32,
+    num_candidates: usize,
+}
+
+#[tauri::command]
+fn generate_optimal_layouts(request: GenerateLayoutsRequest) -> Result<Vec<crate::engine::layout_generator::LayoutCandidate>, String> {
+    println!("DEBUG: generate_optimal_layouts called for {} target items", request.target_items.len());
+    
+    // Load data
+    let facilities_vec = crate::engine::data_loader::DataLoader::load_facilities();
+    let recipes_vec = crate::engine::data_loader::DataLoader::load_recipes();
+    let geometry = crate::engine::data_loader::DataLoader::load_geometry();
+    
+    // Build facilities map
+    let mut facilities_map = std::collections::HashMap::new();
+    for facility in facilities_vec {
+        facilities_map.insert(facility.id.clone(), facility);
+    }
+    
+    // Convert recipes to solver format
+    let solver_recipes: Vec<crate::engine::recipe_solver::Recipe> = recipes_vec.iter().map(|r| {
+        crate::engine::recipe_solver::Recipe {
+            id: r.id.clone(),
+            inputs: r.inputs.iter().map(|i| crate::engine::recipe_solver::RecipeInput {
+                item_id: i.item_id.clone(),
+                amount: i.amount as f64,
+            }).collect(),
+            outputs: r.outputs.iter().map(|o| crate::engine::recipe_solver::RecipeOutput {
+                item_id: o.item_id.clone(),
+                amount: o.amount as f64,
+            }).collect(),
+            facility_id: r.facility_id.clone(),
+            crafting_time: r.crafting_time as f64,
+        }
+    }).collect();
+    
+    // Solve production plan
+    let solver = crate::engine::recipe_solver::RecipeSolver::new(solver_recipes, facilities_map.clone());
+    let production_plan = solver.solve(request.target_items.clone())?;
+    
+    println!("DEBUG: Production plan requires {} facility types", production_plan.required_facilities.len());
+    
+    // Generate layouts - Note: PAC is now handled automatically in layout_generator
+    let constraints = crate::engine::layout_generator::LayoutConstraints {
+        plate_width: request.plate_width,
+        plate_height: request.plate_height,
+        power_source_type: "facility_hub_pac".to_string(), // Automated PAC ID
+        power_source_x: 0, // Will be set by generator
+        power_source_y: 0, // Will be set by generator
+        max_power_budget: None,
+    };
+    
+    let generator = crate::engine::layout_generator::LayoutGenerator::new(constraints, geometry);
+    
+    let required_facilities: Vec<(String, String, f64)> = production_plan.required_facilities.iter()
+        .map(|req| (req.facility_id.clone(), req.facility_type.clone(), req.count))
+        .collect();
+    
+    let mut candidates = generator.generate_layouts(
+        required_facilities,
+        &request.target_items,
+        request.num_candidates,
+    );
+    
+    // Take top 5
+    candidates.truncate(5);
+    
+    println!("DEBUG: Generated {} layout candidates", candidates.len());
+    
+    Ok(candidates)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    println!("DEBUG: Starting Endfield lib run()");
     let config = crate::engine::data_loader::DataLoader::load_config();
+    println!("DEBUG: Config loaded in run(): {:?}", config);
+    
+    println!("DEBUG: Initializing Optimizer (WGPU) - Optional");
     let optimizer = pollster::block_on(Optimizer::new());
+    if optimizer.is_some() {
+        println!("DEBUG: Optimizer initialized successfully");
+    } else {
+        println!("DEBUG: Optimizer initialization failed or skipped (No GPU?)");
+    }
     
     tauri::Builder::default()
         .manage(AppState {
@@ -58,7 +167,7 @@ pub fn run() {
             optimizer,
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![get_grid_state, get_app_data, update_simulation_state])
+        .invoke_handler(tauri::generate_handler![get_grid_state, get_app_data, update_simulation_state, get_power_status, generate_optimal_layouts])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
