@@ -1,0 +1,76 @@
+Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
+Viewport.tsx:39 Failed to load app data: TypeError: Cannot read properties of undefined (reading 'invoke')
+    at invoke (@tauri-apps_api_core.js?v=9db15a40:111:37)
+    at Viewport.tsx:34:9
+    at Object.react_stack_bottom_frame (react-dom_client.js?v=9db15a40:18567:20)
+    at runWithFiberInDEV (react-dom_client.js?v=9db15a40:997:72)
+    at commitHookEffectListMount (react-dom_client.js?v=9db15a40:9411:163)
+    at commitHookPassiveMountEffects (react-dom_client.js?v=9db15a40:9465:60)
+    at commitPassiveMountOnFiber (react-dom_client.js?v=9db15a40:11040:29)
+    at recursivelyTraversePassiveMountEffects (react-dom_client.js?v=9db15a40:11010:13)
+    at commitPassiveMountOnFiber (react-dom_client.js?v=9db15a40:11201:13)
+    at recursivelyTraversePassiveMountEffects (react-dom_client.js?v=9db15a40:11010:13)
+(anonymous) @ Viewport.tsx:39
+Viewport.tsx:39 Failed to load app data: TypeError: Cannot read properties of undefined (reading 'invoke')
+    at invoke (@tauri-apps_api_core.js?v=9db15a40:111:37)
+    at Viewport.tsx:34:9
+    at Object.react_stack_bottom_frame (react-dom_client.js?v=9db15a40:18567:20)
+    at runWithFiberInDEV (react-dom_client.js?v=9db15a40:997:72)
+    at commitHookEffectListMount (react-dom_client.js?v=9db15a40:9411:163)
+    at commitHookPassiveMountEffects (react-dom_client.js?v=9db15a40:9465:60)
+    at reconnectPassiveEffects (react-dom_client.js?v=9db15a40:11273:13)
+    at recursivelyTraverseReconnectPassiveEffects (react-dom_client.js?v=9db15a40:11240:11)
+    at reconnectPassiveEffects (react-dom_client.js?v=9db15a40:11317:13)
+    at recursivelyTraverseReconnectPassiveEffects (react-dom_client.js?v=9db15a40:11240:11)
+(anonymous) @ Viewport.tsx:39
+@tauri-apps_api_core.js?v=9db15a40:111 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'invoke')
+    at invoke (@tauri-apps_api_core.js?v=9db15a40:111:37)
+    at useSandbox.ts:23:9
+    at Object.react_stack_bottom_frame (react-dom_client.js?v=9db15a40:18567:20)
+    at runWithFiberInDEV (react-dom_client.js?v=9db15a40:997:72)
+    at commitHookEffectListMount (react-dom_client.js?v=9db15a40:9411:163)
+    at commitHookPassiveMountEffects (react-dom_client.js?v=9db15a40:9465:60)
+    at commitPassiveMountOnFiber (react-dom_client.js?v=9db15a40:11040:29)
+    at recursivelyTraversePassiveMountEffects (react-dom_client.js?v=9db15a40:11010:13)
+    at commitPassiveMountOnFiber (react-dom_client.js?v=9db15a40:11201:13)
+    at recursivelyTraversePassiveMountEffects (react-dom_client.js?v=9db15a40:11010:13)
+@tauri-apps_api_core.js?v=9db15a40:111 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'invoke')
+    at invoke (@tauri-apps_api_core.js?v=9db15a40:111:37)
+    at useSandbox.ts:23:9
+    at Object.react_stack_bottom_frame (react-dom_client.js?v=9db15a40:18567:20)
+    at runWithFiberInDEV (react-dom_client.js?v=9db15a40:997:72)
+    at commitHookEffectListMount (react-dom_client.js?v=9db15a40:9411:163)
+    at commitHookPassiveMountEffects (react-dom_client.js?v=9db15a40:9465:60)
+    at reconnectPassiveEffects (react-dom_client.js?v=9db15a40:11273:13)
+    at recursivelyTraverseReconnectPassiveEffects (react-dom_client.js?v=9db15a40:11240:11)
+    at reconnectPassiveEffects (react-dom_client.js?v=9db15a40:11317:13)
+    at recursivelyTraverseReconnectPassiveEffects (react-dom_client.js?v=9db15a40:11240:11)
+(index):1 Unchecked runtime.lastError: The message port closed before a response was received.
+(index):1 Unchecked runtime.lastError: The message port closed before a response was received.
+(index):1 Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist.
+4Viewport.tsx:47 Power status poll error: TypeError: Cannot read properties of undefined (reading 'invoke')
+    at invoke (@tauri-apps_api_core.js?v=9db15a40:111:37)
+    at Viewport.tsx:45:13
+(anonymous) @ Viewport.tsx:47
+9Viewport.tsx:47 Power status poll error: TypeError: Cannot read properties of undefined (reading 'invoke')
+    at invoke (@tauri-apps_api_core.js?v=9db15a40:111:37)
+    at Viewport.tsx:45:13
+(anonymous) @ Viewport.tsx:47
+Promise.catch
+(anonymous) @ Viewport.tsx:47
+Viewport.tsx:39 Failed to load app data: TypeError: Cannot read properties of undefined (reading 'invoke')
+    at Viewport.tsx:34:9
+Viewport.tsx:39 Failed to load app data: TypeError: Cannot read properties of undefined (reading 'invoke')
+    at Viewport.tsx:34:9
+@tauri-apps_api_core.js?v=9db15a40:111 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'invoke')
+    at useSandbox.ts:23:9
+@tauri-apps_api_core.js?v=9db15a40:111 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'invoke')
+    at useSandbox.ts:23:9
+(index):1 Unchecked runtime.lastError: The message port closed before a response was received.
+(index):1 Unchecked runtime.lastError: The message port closed before a response was received.
+(index):1 Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist.
+9
+Viewport.tsx:47 Power status poll error: TypeError: Cannot read properties of undefined (reading 'invoke')
+    at Viewport.tsx:45:13
+﻿
+
