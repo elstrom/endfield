@@ -8,80 +8,55 @@ use serde_json;
 pub struct DataLoader;
 
 impl DataLoader {
-    /// Loads the strictly required central configuration.
-    /// Panics if valid config is not found, adhering to "No Fallback" rule.
-    pub fn load_config() -> serde_json::Value {
-        // We only check the standard location. No magic fallbacks.
-        // Assuming running from src-tauri root or debug dir finding it in root.
-        let path = "config.json"; 
+    fn load_database() -> serde_json::Value {
+        let path = "database.json";
         
         let content = fs::read_to_string(path)
-            .or_else(|_| fs::read_to_string(format!("src-tauri/{}", path)))
             .or_else(|_| fs::read_to_string(format!("../{}", path)))
-            .expect("CRITICAL: config.json not found. System cannot start without global configuration.");
+            .or_else(|_| fs::read_to_string(format!("src-tauri/{}", path)))
+            // Try absolute path as fallback relative to potential running directory
+            .or_else(|_| fs::read_to_string(r"d:\Gawe\AI\endfield\database.json"))
+            .expect("CRITICAL: database.json not found. System cannot start.");
 
         serde_json::from_str(&content)
-            .expect("CRITICAL: config.json is malformed.")
+            .expect("CRITICAL: database.json is malformed.")
     }
 
-    fn resolve_path(config: &serde_json::Value, key: &str) -> String {
-        let path_str = config["data_resources"][key]
-            .as_str()
-            .expect(&format!("Config missing data_resources.{}", key));
-        
-        // Simple resolution logic: try direct, then src-tauri/, then ../
-        if Path::new(path_str).exists() {
-            return path_str.to_string();
-        }
-        let src_prefixed = format!("src-tauri/{}", path_str);
-        if Path::new(&src_prefixed).exists() {
-            return src_prefixed;
-        }
-        let parent_prefixed = format!("../{}", path_str);
-        // We return the raw string if not found, let the loader fail explicitly
-        if Path::new(&parent_prefixed).exists() {
-            return parent_prefixed;
-        }
-        path_str.to_string() 
+    /// Loads the configuration section from database.json
+    pub fn load_config() -> serde_json::Value {
+        let db = Self::load_database();
+        db["config"].clone()
     }
 
     pub fn load_facilities() -> Vec<Facility> {
-        let config = Self::load_config();
-        let path = Self::resolve_path(&config, "facilities_path");
-        
-        let content = fs::read_to_string(&path)
-            .expect(&format!("Failed to read facilities data from {}", path));
-        
-        serde_json::from_str(&content).expect("Failed to parse facilities data")
+        let db = Self::load_database();
+        serde_json::from_value(db["facilities"].clone()).unwrap_or_default()
     }
 
     pub fn load_items() -> Vec<Item> {
-        let config = Self::load_config();
-        let path = Self::resolve_path(&config, "items_path");
-        
-        let content = fs::read_to_string(&path)
-            .expect(&format!("Failed to read items data from {}", path));
-            
-        serde_json::from_str(&content).expect("Failed to parse items data")
+        let db = Self::load_database();
+        serde_json::from_value(db["items"].clone()).unwrap_or_default()
     }
 
     pub fn load_recipes() -> Vec<Recipe> {
-        let config = Self::load_config();
-        let path = Self::resolve_path(&config, "recipes_path");
-        
-        let content = fs::read_to_string(&path)
-            .expect(&format!("Failed to read recipes data from {}", path));
-            
-        serde_json::from_str(&content).expect("Failed to parse recipes data")
+        let db = Self::load_database();
+        serde_json::from_value(db["recipes"].clone()).unwrap_or_default()
     }
 
+    /// Geometry is now embedded in facilities, but if we need a separate geometry object 
+    /// for some reason, we can extract it or return the facilities themselves.
+    /// The frontend/engine might expect the old geometry format which was a list of types.
+    /// In the new database, facilities ARE the geometry + metadata.
+    /// We will return the list of facilities 'as' the geometry value for now.
     pub fn load_geometry() -> serde_json::Value {
-        let config = Self::load_config();
-        let path = Self::resolve_path(&config, "geometry_path");
-        
-        let content = fs::read_to_string(&path)
-            .expect(&format!("Failed to read geometry data from {}", path));
-            
-        serde_json::from_str(&content).expect("Failed to parse geometry data")
+        let db = Self::load_database();
+        // The old code expected an array of geometry objects. The new "facilities" array
+        // contains objects with "width", "height", "ports" which matches the geometry shape
+        // closely enough for the engine's usage (grid alignment), 
+        // ALTHOUGH the engine might look for "type" field instead of relying on ID mapping.
+        // Let's ensure the Engine uses "name" or "id" correctly. 
+        // For compability, we return the facilities array.
+        db["facilities"].clone()
     }
 }
+

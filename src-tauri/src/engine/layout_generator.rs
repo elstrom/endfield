@@ -199,27 +199,35 @@ impl LayoutGenerator {
     }
 
     fn get_facility_meta(&self, facility_type: &str) -> Option<(i32, i32, Vec<Port>)> {
-        let geom_array = self.geometry.as_array()?;
-        for item in geom_array {
-            if item["type"].as_str()? == facility_type {
-                let width = item["width"].as_i64()? as i32;
-                let height = item["height"].as_i64()? as i32;
-                
-                let mut ports = Vec::new();
-                if let Some(p_arr) = item["ports"].as_array() {
-                    for p in p_arr {
-                        ports.push(Port {
-                            id: p["id"].as_str().unwrap_or("?").to_string(),
-                            x: p["x"].as_i64().unwrap_or(0) as i32,
-                            y: p["y"].as_i64().unwrap_or(0) as i32,
-                            r#type: p["type"].as_str().unwrap_or("input").to_string(),
-                        });
-                    }
+        // In database.json, facilities is a List of objects.
+        // We usually lookup by ID or Name. The `facility_type` passed here usually comes from the recipe's producer ID.
+        // OR it's the "Name" (e.g. "PAC_MAIN").
+        
+        let facilities = self.geometry.as_array()?;
+        
+        // Try ID match first, then Name match
+        let facility = facilities.iter().find(|f| {
+             f["id"].as_str() == Some(facility_type) || f["name"].as_str() == Some(facility_type)
+        });
+
+        if let Some(f) = facility {
+            let width = f["width"].as_i64()? as i32;
+            let height = f["height"].as_i64()? as i32;
+            
+            let mut ports = Vec::new();
+            if let Some(p_arr) = f["ports"].as_array() {
+                for p in p_arr {
+                    ports.push(Port {
+                        id: p["id"].as_str().unwrap_or("?").to_string(),
+                        x: p["x"].as_i64().unwrap_or(0) as i32,
+                        y: p["y"].as_i64().unwrap_or(0) as i32,
+                        r#type: p["type"].as_str().unwrap_or("input").to_string(),
+                    });
                 }
-                
-                return Some((width, height, ports));
             }
+            return Some((width, height, ports));
         }
+
         None
     }
 
