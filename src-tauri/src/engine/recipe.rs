@@ -9,7 +9,7 @@ pub struct RecipeIngredient {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Recipe {
     pub id: String,
-    pub name: String,
+    pub name: Option<String>,
     pub inputs: Vec<RecipeIngredient>,
     pub outputs: Vec<RecipeIngredient>,
     pub crafting_time: f32,

@@ -1,6 +1,8 @@
+#[allow(unused_imports)]
 use wgpu::util::DeviceExt;
 use std::sync::Arc;
 
+#[allow(dead_code)]
 pub struct Optimizer {
     device: Arc<wgpu::Device>,
     queue: Arc<wgpu::Queue>,

@@ -98,6 +98,7 @@ fn generate_optimal_layouts(request: GenerateLayoutsRequest) -> Result<Vec<crate
     let solver_recipes: Vec<crate::engine::recipe_solver::Recipe> = recipes_vec.iter().map(|r| {
         crate::engine::recipe_solver::Recipe {
             id: r.id.clone(),
+            name: r.name.clone(),
             inputs: r.inputs.iter().map(|i| crate::engine::recipe_solver::RecipeInput {
                 item_id: i.item_id.clone(),
                 amount: i.amount as f64,
@@ -174,12 +175,13 @@ pub fn run() {
     let config = crate::engine::data_loader::DataLoader::load_config();
     println!("DEBUG: Config loaded in run(): {:?}", config);
     
-    println!("DEBUG: Initializing Optimizer (WGPU) - Optional");
-    let optimizer = pollster::block_on(Optimizer::new());
+    println!("DEBUG: Initializing Optimizer (WGPU) - Optional -- DISABLED FOR DEBUGGING");
+    // let optimizer = pollster::block_on(Optimizer::new());
+    let optimizer: Option<Optimizer> = None;
     if optimizer.is_some() {
         println!("DEBUG: Optimizer initialized successfully");
     } else {
-        println!("DEBUG: Optimizer initialization failed or skipped (No GPU?)");
+        println!("DEBUG: Optimizer initialization skipped (Debugging)");
     }
     
     tauri::Builder::default()

@@ -89,7 +89,9 @@ export function PlanningPage({ onGenerateComplete }: PlanningPageProps) {
                 num_candidates: 100, // More candidates for better optimization
             };
 
+            console.log("DEBUG: Sending request to backend:", request);
             const layouts = await invoke("generate_optimal_layouts", { request });
+            console.log("DEBUG: Received layouts:", layouts);
 
             clearInterval(progressInterval);
             setProgress(100);
@@ -98,8 +100,8 @@ export function PlanningPage({ onGenerateComplete }: PlanningPageProps) {
                 onGenerateComplete(layouts as any[]);
             }, 800);
         } catch (error) {
-            console.error("Generation failed:", error);
-            alert(`Failed to generate layouts: ${error}`);
+            console.error("Critical Generation Failure:", error);
+            alert(`Backend Error: ${JSON.stringify(error)}`);
             clearInterval(progressInterval);
             setIsGenerating(false);
             setProgress(0);
@@ -159,7 +161,7 @@ export function PlanningPage({ onGenerateComplete }: PlanningPageProps) {
                                     onChange={(e) => setItemRate(Number(e.target.value))}
                                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 text-brand font-black font-mono focus:outline-none focus:border-brand transition-all text-center text-lg"
                                 />
-                                <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-white border border-slate-100 px-3 py-0.5 rounded-full text-[8px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Target Rate (Suggestion)</span>
+                                <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-white border border-slate-100 px-3 py-0.5 rounded-full text-[8px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Target Rate (Input 0 for Max)</span>
                             </div>
 
                             <button

@@ -7,6 +7,7 @@ fn test_solve_unconstrained() {
     let recipes = vec![
         Recipe {
             id: "recipe_iron".to_string(),
+            name: Some("Iron Recipe".to_string()),
             inputs: vec![],
             outputs: vec![RecipeOutput { item_id: "iron".to_string(), amount: 1.0 }],
             facility_id: "smelter".to_string(),
@@ -42,6 +43,7 @@ fn test_solve_space_constrained() {
     let recipes = vec![
         Recipe {
             id: "recipe_iron".to_string(),
+            name: Some("Iron Recipe".to_string()),
             inputs: vec![],
             outputs: vec![RecipeOutput { item_id: "iron".to_string(), amount: 1.0 }],
             facility_id: "smelter".to_string(),

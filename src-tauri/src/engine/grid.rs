@@ -19,16 +19,17 @@ pub struct GridState {
 
 impl GridState {
     pub fn new(config: &serde_json::Value) -> Self {
-        let width = config["simulation"]["world_width"].as_u64().unwrap_or(5000) as u32;
-        let height = config["simulation"]["world_height"].as_u64().unwrap_or(5000) as u32;
-        let grid_size = config["simulation"]["grid_size"].as_u64().unwrap_or(32) as u32;
+        let width = config["simulation_constants"]["default_plate_width"].as_u64().unwrap_or(32) as u32;
+        let height = config["simulation_constants"]["default_plate_height"].as_u64().unwrap_or(32) as u32;
+        // Grid size is implicitly 1x1 block in this logic
+        let grid_size = 1; 
         
         Self {
             width,
             height,
             placed_facilities: Vec::new(),
             logistics_edges: Vec::new(),
-            occupancy: vec![false; ((width/grid_size) * (height/grid_size)) as usize],
+            occupancy: vec![false; (width * height) as usize],
             power_grid: PowerGrid::new(),
             grid_size,
         }

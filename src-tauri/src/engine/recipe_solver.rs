@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use crate::engine::data_loader::DataLoader;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecipeInput {
@@ -16,6 +17,7 @@ pub struct RecipeOutput {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Recipe {
     pub id: String,
+    pub name: Option<String>, // Made optional to prevent crash if missing
     pub inputs: Vec<RecipeInput>,
     pub outputs: Vec<RecipeOutput>,
     pub facility_id: String,
@@ -25,7 +27,7 @@ pub struct Recipe {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FacilityRequirement {
     pub facility_id: String,
-    pub facility_type: String,
+    pub facility_type: String, // Display Name
     pub count: f64,
     pub recipe_id: String,
 }
@@ -64,16 +66,26 @@ impl RecipeSolver {
 
     /// Calculate production rate (items per minute)
     fn calc_rate(amount: f64, crafting_time: f64) -> f64 {
+        // Validation for zero crafting time to prevent NaN
+        if crafting_time <= 0.0001 { return 0.0; }
         (amount * 60.0) / crafting_time
     }
 
-    /// Solve production requirements validating against constraints
+    /// Solve production requirements validating against "Hard Constraints" from Config
     pub fn solve(
         &self,
         target_items: Vec<(String, f64)>, // (item_id, requested_rate)
         plate_width: i32,
         plate_height: i32,
     ) -> Result<ProductionPlan, String> {
+        let config = DataLoader::load_config();
+        
+        // Extract Simulation Constants
+        let _time_scale = config["simulation_constants"]["time_unit_scale"].as_f64().unwrap_or(60.0);
+        let usable_area_ratio = config["simulation_constants"]["usable_area_ratio"].as_f64().unwrap_or(0.75);
+        let base_power_budget = config["simulation_constants"]["base_power_budget"].as_f64().unwrap_or(5000.0);
+        let min_demand_threshold = config["optimization_constraints"]["min_demand_threshold"].as_f64().unwrap_or(0.0001);
+
         let mut required_facilities: Vec<FacilityRequirement> = Vec::new();
         let mut item_demands: HashMap<String, f64> = HashMap::new();
         let mut processed_items: HashSet<String> = HashSet::new();
@@ -84,37 +96,31 @@ impl RecipeSolver {
             item_demands.insert(item_id.clone(), *rate);
         }
 
-        // 1. Calculate Theoretical Requirements (Unlimited)
+        // 1. Calculate Theoretical Requirements (Top-Down Demand Propagation)
         let mut stack: Vec<String> = target_items.iter().map(|(id, _)| id.clone()).collect();
         let mut temp_processed = HashSet::new();
 
-        // Topological sort / Dependency check loop
-        // Warning: This simple loop assumes no cycles. Endfield recipes generally don't have cycles except complex ones.
-        // For simplicity, we process demand propagation.
-        
-        // We'll use a loop that processes items when their dependencies are known or they are targets
-        // Actually, the previous stack approach was fine for trees.
-        
         while let Some(item_id) = stack.pop() {
-            // Checks to prevent infinite loops if cycles exist
             if temp_processed.contains(&item_id) { continue; }
             
             let demand = *item_demands.get(&item_id).unwrap_or(&0.0);
-            if demand <= 0.0001 { continue; }
+            if demand <= min_demand_threshold { continue; }
 
             let recipes = self.find_recipes_for_item(&item_id);
             if recipes.is_empty() {
-                // Raw material
+                // Raw material node
                 raw_materials.insert(item_id.clone(), demand);
                 temp_processed.insert(item_id.clone());
                 continue;
             }
 
-            let recipe = recipes[0]; // TODO: Smart recipe selection
+            // Simple heuristic: Take the first recipe (TODO: Advanced Recipe Selection)
+            let recipe = recipes[0];
             
             let output = recipe.outputs.iter().find(|o| o.item_id == item_id).unwrap();
             let production_rate_per_facility = Self::calc_rate(output.amount, recipe.crafting_time);
             
+            // demand is items/min. rate is items/min/facility.
             let facility_count = demand / production_rate_per_facility;
 
             // Get facility info
@@ -128,10 +134,9 @@ impl RecipeSolver {
                 recipe_id: recipe.id.clone(),
             });
 
-            // Add input demands
+            // Add input demands to the map
             for input in &recipe.inputs {
-                // Input rate needed = (input_amount / crafting_time * 60) * facility_count
-                // Simplified: (input_amount / output_amount) * demand
+                // Rate required = (input_amount / output_amount) * demand
                 let input_rate = (input.amount / output.amount) * demand;
                 *item_demands.entry(input.item_id.clone()).or_insert(0.0) += input_rate;
                 stack.push(input.item_id.clone());
@@ -140,13 +145,12 @@ impl RecipeSolver {
             temp_processed.insert(item_id);
         }
 
-        // 2. Validate Constraints
+        // 2. Validate Constraints (The "Bottleneck" Check)
         let total_area_blocks = (plate_width * plate_height) as f64;
-        let usable_area_ratio = 0.75; // Reserve 25% for logistics
         let max_usable_area = total_area_blocks * usable_area_ratio;
         
         let mut total_facility_area = 0.0;
-        let mut total_power = 0.0;
+        let mut total_power_consumption = 0.0;
 
         for req in &required_facilities {
             if let Some(fac) = self.facilities.get(&req.facility_id) {
@@ -155,33 +159,33 @@ impl RecipeSolver {
                 total_facility_area += area;
                 
                 // Power = power * count
-                total_power += fac.power_consumption as f64 * req.count;
+                total_power_consumption += fac.power_consumption as f64 * req.count;
             }
         }
 
-        // 3. Calculate Scale Factor
+        // 3. Calculate Scale Factor (Weakest Link Principle)
         let mut scale_factor = 1.0;
         let mut limiting_factor = None;
 
+        // Space Constraint
         if total_facility_area > max_usable_area {
             let area_scale = max_usable_area / total_facility_area;
             if area_scale < scale_factor {
                 scale_factor = area_scale;
-                limiting_factor = Some(format!("Space ({:.0}%)", area_scale * 100.0));
+                limiting_factor = Some(format!("Space Constraints (Capacity at {:.0}%)", area_scale * 100.0));
             }
         }
         
-        // Example Power Budget (Hardcoded for now as we don't have dynamic power source selection yet)
-        let power_budget = 5000.0; // Assume a generic base limit
-        if total_power > power_budget {
-            let power_scale = power_budget / total_power;
+        // Power Constraint
+        if total_power_consumption > base_power_budget {
+            let power_scale = base_power_budget / total_power_consumption;
             if power_scale < scale_factor {
                 scale_factor = power_scale;
-                limiting_factor = Some(format!("Power ({:.0}%)", power_scale * 100.0));
+                limiting_factor = Some(format!("Power Grid Overload (Capacity at {:.0}%)", power_scale * 100.0));
             }
         }
 
-        // 4. Apply Scaling
+        // 4. Apply Scaling and Finalize Plan
         if scale_factor < 1.0 {
             for req in &mut required_facilities {
                 req.count *= scale_factor;
@@ -189,7 +193,7 @@ impl RecipeSolver {
             for val in raw_materials.values_mut() {
                 *val *= scale_factor;
             }
-            total_power *= scale_factor;
+            total_power_consumption *= scale_factor;
         }
 
         let mut actual_rates = HashMap::new();
@@ -202,8 +206,8 @@ impl RecipeSolver {
             actual_rates,
             required_facilities,
             raw_materials,
-            total_power,
-            constraint_limited: scale_factor < 1.0,
+            total_power: total_power_consumption,
+            constraint_limited: scale_factor < 0.999, // Floating point tolerance
             limiting_factor,
         })
     }
