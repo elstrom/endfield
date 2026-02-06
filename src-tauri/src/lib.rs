@@ -169,6 +169,12 @@ fn generate_optimal_layouts(request: GenerateLayoutsRequest) -> Result<Vec<crate
     Ok(candidates)
 }
 
+#[tauri::command]
+fn update_config(config: serde_json::Value) {
+    println!("DEBUG: update_config called");
+    crate::engine::data_loader::DataLoader::update_config(config);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     println!("DEBUG: Starting Endfield lib run()");
@@ -190,7 +196,7 @@ pub fn run() {
             optimizer,
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![get_grid_state, get_app_data, update_simulation_state, get_power_status, generate_optimal_layouts])
+        .invoke_handler(tauri::generate_handler![update_config, get_grid_state, get_app_data, update_simulation_state, get_power_status, generate_optimal_layouts])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

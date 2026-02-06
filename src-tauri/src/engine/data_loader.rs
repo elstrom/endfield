@@ -9,17 +9,33 @@ pub struct DataLoader;
 
 impl DataLoader {
     fn load_database() -> serde_json::Value {
-        let path = "database.json";
-        
-        let content = fs::read_to_string(path)
-            .or_else(|_| fs::read_to_string(format!("../{}", path)))
-            .or_else(|_| fs::read_to_string(format!("src-tauri/{}", path)))
-            // Try absolute path as fallback relative to potential running directory
+        // Prioritize the root database.json (../database.json when running from src-tauri)
+        // to avoid triggering the hot-reload watcher which watches src-tauri.
+        let content = fs::read_to_string("../database.json")
+            .or_else(|_| fs::read_to_string("database.json"))
+            .or_else(|_| fs::read_to_string("src-tauri/database.json"))
             .or_else(|_| fs::read_to_string(r"d:\Gawe\AI\endfield\database.json"))
-            .expect("CRITICAL: database.json not found. System cannot start.");
+            .expect("CRITICAL: database.json not found.");
+        serde_json::from_str(&content).expect("Malformed database.json")
+    }
 
-        serde_json::from_str(&content)
-            .expect("CRITICAL: database.json is malformed.")
+    fn save_database(db: serde_json::Value) {
+        let content = serde_json::to_string_pretty(&db).expect("Failed to serialize database");
+        
+        // Try to write to the root database.json first (../database.json)
+        // This prevents the loop/restart issue.
+        if fs::write("../database.json", &content).is_err() {
+            // Fallback to local if parent fails (unlikely in dev)
+            if fs::write("database.json", &content).is_err() {
+                fs::write(r"d:\Gawe\AI\endfield\database.json", &content).expect("Failed to write database.json");
+            }
+        }
+    }
+
+    pub fn update_config(new_config: serde_json::Value) {
+        let mut db = Self::load_database();
+        db["config"] = new_config;
+        Self::save_database(db);
     }
 
     /// Loads the configuration section from database.json

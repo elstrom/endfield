@@ -6,16 +6,11 @@
 }
 
 :root {
-    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-    line-height: 1.5;
-    font-weight: 400;
-
-    color-scheme: light;
-    color: #1a1a1a;
-    background-color: #ffffff;
-
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
+    font-family: 'Inter', system-ui, sans-serif;
+    color-scheme: dark;
+    color: #d3d3d3;
+    background-color: #1e1e1e;
+    
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }

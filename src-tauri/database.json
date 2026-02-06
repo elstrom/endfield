@@ -3,22 +3,22 @@
     "grid_size": 64,
     "presets": [
       {
-        "height": 20,
-        "id": "small",
-        "name": "Small Outpost",
-        "width": 32
-      },
-      {
         "height": 40,
-        "id": "medium",
-        "name": "Standard Factory",
+        "id": "1770350246673",
+        "name": "New Layout",
         "width": 64
       },
       {
-        "height": 80,
-        "id": "large",
-        "name": "Industrial Complex",
-        "width": 128
+        "height": 1,
+        "id": "1770351428374",
+        "name": "bebek",
+        "width": 2
+      },
+      {
+        "height": 1,
+        "id": "1770351444575",
+        "name": "kentang",
+        "width": 14
       }
     ],
     "theme": {
@@ -30,8 +30,9 @@
       "text": "#d3d3d3",
       "workspace_bg": "#1e1e1e"
     },
-    "world_size_tiles_x": 3,
-    "world_size_tiles_y": 3,
+    "ui_scale": 1,
+    "world_size_tiles_x": 64,
+    "world_size_tiles_y": 64,
     "zoom_level": 1
   },
   "facilities": [

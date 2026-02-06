@@ -1,17 +1,535 @@
+import { useState, useEffect } from "react";
 import { Viewport } from "./components/Viewport";
+import {
+  MousePointer2,
+  Move,
+  Box,
+  Link2,
+  Eraser,
+  Search,
+  Layers,
+  Info,
+  Zap,
+  Cpu,
+  Menu,
+  ChevronDown,
+  ChevronRight,
+  Window as WindowIcon,
+  Plus,
+  Check,
+  Settings,
+  X,
+  PlusCircle,
+  Trash2
+} from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
-function App() {
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+// Reusable Panel Section Component with Collapse Logic
+const PanelSection = ({
+  title,
+  children,
+  defaultOpen = true,
+  headerActions,
+  bgColor = "transparent"
+}: {
+  title: string,
+  children: React.ReactNode,
+  defaultOpen?: boolean,
+  headerActions?: React.ReactNode,
+  bgColor?: string
+}) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
   return (
-    <div className="w-full h-full bg-[#1e1e1e] flex flex-col text-slate-200">
-      <header className="h-10 flex items-center px-4 bg-[#2d2d2d] border-b border-[#3e3e3e] select-none">
-        <h1 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Endfield Architect // v0.1.0</h1>
-      </header>
+    <section className="flex flex-col border-b last:border-b-0" style={{ borderColor: "#1c1c1c" }}>
+      <div
+        className="h-[2em] flex items-center px-[0.5em] gap-[0.5em] cursor-pointer select-none hover:bg-white/5 transition-colors bg-[#3c3c3c]"
+        style={{ borderColor: "#1c1c1c" }}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {isOpen ? <ChevronDown size={12} className="opacity-70" /> : <ChevronRight size={12} className="opacity-70" />}
+        <span className="font-bold text-[0.75em] uppercase tracking-wider opacity-90">{title}</span>
+        {headerActions && (
+          <div className="ml-auto flex items-center" onClick={(e) => e.stopPropagation()}>
+            {headerActions}
+          </div>
+        )}
+      </div>
+      {isOpen && (
+        <div style={{ backgroundColor: bgColor }} className="animate-in slide-in-from-top-2 duration-200">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+};
 
-      <div className="flex-1 relative overflow-hidden bg-[#1e1e1e]">
-        <Viewport />
+// Reusable Preset Modal Component (Defined outside App to prevent re-frame/focus loss)
+const PresetModal = ({
+  isOpen,
+  onClose,
+  appData,
+  onConfigChange,
+  onSelectPreset
+}: {
+  isOpen: boolean,
+  onClose: () => void,
+  appData: any,
+  onConfigChange: (updates: any) => void,
+  onSelectPreset: (w: string, h: string) => void
+}) => {
+  const [newPreset, setNewPreset] = useState({ name: "New Layout", width: 64, height: 40 });
+
+  // UseEffect to reset state when modal opens could be good, but simple state is fine.
+  if (!isOpen) return null;
+
+  const savePreset = () => {
+    const presets = appData?.config?.presets || [];
+    const updated = [...presets, { ...newPreset, id: Date.now().toString() }];
+    onConfigChange({ presets: updated });
+  };
+
+  const deletePreset = (id: string) => {
+    const updated = (appData?.config?.presets || []).filter((p: any) => p.id !== id);
+    onConfigChange({ presets: updated });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-[2.5em] select-text"
+      onClick={onClose}
+    >
+      <div className="bg-[#2b2b2b] w-full max-w-[64em] h-[45em] flex flex-col rounded-lg shadow-2xl border border-white/10 overflow-hidden text-white" onClick={e => e.stopPropagation()}>
+        <div className="h-[2.8em] bg-[#3c3c3c] flex items-center px-[1em] justify-between border-b border-black/20 select-none">
+          <span className="text-[0.85em] font-bold uppercase tracking-widest opacity-80">New Document / Canvas Presets</span>
+          <button
+            onClick={onClose}
+            className="hover:bg-[#c42b1c] hover:text-white bg-white/5 p-[0.4em] rounded-sm transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="flex-1 flex overflow-hidden">
+          <div className="w-[18em] bg-[#252525] border-r border-black/20 flex flex-col select-none">
+            <div className="p-[0.8em] border-b border-white/5 text-[0.7em] font-bold opacity-40 uppercase">Saved Presets</div>
+            <div className="flex-1 overflow-y-auto p-[0.6em] space-y-[0.3em]">
+              {appData?.config?.presets?.map((p: any) => (
+                <div key={p.id} className="group flex items-center gap-[0.5em] p-[0.6em] hover:bg-[#323232] rounded cursor-pointer transition-colors border border-transparent hover:border-white/5">
+                  <div className="flex-1" onClick={() => { onSelectPreset(String(p.width), String(p.height)); onClose(); }}>
+                    <div className="text-[0.85em] font-bold">{p.name}</div>
+                    <div className="text-[0.7em] opacity-40">{p.width} x {p.height} Tiles</div>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); deletePreset(p.id); }} className="opacity-0 group-hover:opacity-100 hover:text-red-500 p-[0.3em]"><Trash2 size={12} /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex-1 bg-[#1e1e1e] flex flex-col items-center justify-center p-[3em] relative text-white select-none">
+            <div className="absolute top-[1em] left-[1em] text-[0.7em] opacity-20 font-mono">PREVIEW RATIO</div>
+            <div className="bg-[#cccccc] shadow-2xl border-[4px] border-white/20 relative" style={{ aspectRatio: `${newPreset.width} / ${newPreset.height}`, width: '80%', maxHeight: '80%' }}>
+              <div className="absolute inset-0 flex items-center justify-center"><div className="text-black/20 font-bold text-2xl uppercase select-none opacity-50">Artboard</div></div>
+              <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, black 1px, transparent 1px), linear-gradient(to bottom, black 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+            </div>
+            <div className="mt-[2em] text-[0.9em] font-mono opacity-50">{newPreset.width} x {newPreset.height} Tiles</div>
+          </div>
+          <div className="w-[20em] bg-[#2b2b2b] border-l border-black/20 p-[1.5em] space-y-[1.5em]">
+            <div className="space-y-[1em]">
+              <div className="flex flex-col gap-[0.5em]">
+                <span className="text-[0.7em] font-bold opacity-40 uppercase select-none">Document Name</span>
+                <input
+                  type="text"
+                  value={newPreset.name}
+                  onChange={(e) => setNewPreset({ ...newPreset, name: e.target.value })}
+                  className="bg-[#1e1e1e] border border-[#444] h-[2.5em] px-[0.8em] text-[0.9em] outline-none focus:border-[#0078d7] rounded-sm text-white w-full select-text"
+                  autoFocus
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-[1em]">
+                <div className="flex flex-col gap-[0.5em]">
+                  <span className="text-[0.7em] font-bold opacity-40 uppercase select-none">Width</span>
+                  <input type="number" value={newPreset.width} onChange={(e) => setNewPreset({ ...newPreset, width: parseInt(e.target.value) || 0 })} className="bg-[#1e1e1e] border border-[#444] h-[2.5em] px-[0.8em] text-[0.9em] outline-none focus:border-[#0078d7] rounded-sm text-white select-text" />
+                </div>
+                <div className="flex flex-col gap-[0.5em]">
+                  <span className="text-[0.7em] font-bold opacity-40 uppercase select-none">Height</span>
+                  <input type="number" value={newPreset.height} onChange={(e) => setNewPreset({ ...newPreset, height: parseInt(e.target.value) || 0 })} className="bg-[#1e1e1e] border border-[#444] h-[2.5em] px-[0.8em] text-[0.9em] outline-none focus:border-[#0078d7] rounded-sm text-white select-text" />
+                </div>
+              </div>
+            </div>
+            <div className="pt-[1.5em] border-t border-white/5 space-y-[0.8em]">
+              <button
+                onClick={savePreset}
+                className="w-full h-[2.8em] bg-[#3c3c3c] hover:bg-[#444] border border-white/10 text-white font-bold text-[0.85em] rounded transition-colors select-none"
+              >
+                SAVE AS PRESET
+              </button>
+              <button
+                onClick={() => { onSelectPreset(String(newPreset.width), String(newPreset.height)); onClose(); }}
+                className="w-full h-[3.2em] bg-[#0078d7] hover:bg-[#005a9e] text-white font-bold text-[0.95em] rounded shadow-lg transition-transform active:scale-95 select-none"
+              >
+                CREATE DOCUMENT
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
-}
+};
 
-export default App;
+// Reusable Preferences Modal
+const PreferencesModal = ({
+  isOpen,
+  onClose,
+  config,
+  onConfigChange
+}: {
+  isOpen: boolean,
+  onClose: () => void,
+  config: any,
+  onConfigChange: (updates: any) => void
+}) => {
+  if (!isOpen) return null;
+
+  const currentFontSize = config?.font_size_px || 12;
+
+  const handleFontSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value);
+    onConfigChange({ font_size_px: val });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm select-none"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#2b2b2b] w-[24em] rounded-lg shadow-2xl border border-white/10 overflow-hidden text-white animate-in zoom-in-95 duration-100"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="h-[2.5em] bg-[#3c3c3c] flex items-center px-[0.8em] justify-between border-b border-black/20">
+          <span className="text-[0.9em] font-bold uppercase tracking-widest opacity-80">Preferences</span>
+          <button onClick={onClose} className="hover:bg-[#c42b1c] hover:text-white bg-white/5 p-[0.3em] rounded-sm"><X size={14} /></button>
+        </div>
+        <div className="p-[1.5em] space-y-[1.5em]">
+          <div className="space-y-[0.5em]">
+            <div className="flex justify-between items-center text-[1em] font-bold opacity-70">
+              <span>Interface Font Size</span>
+              <span>{currentFontSize}px</span>
+            </div>
+            <input
+              type="range"
+              min="10"
+              max="18"
+              step="1"
+              value={currentFontSize}
+              onChange={handleFontSizeChange}
+              className="w-full h-[0.3em] bg-[#444] rounded-lg appearance-none cursor-pointer accent-[#0078d7]"
+            />
+            <div className="text-[0.85em] opacity-40">Adjust the text size of the interface.</div>
+          </div>
+
+          <div className="pt-[1em] border-t border-white/5 flex justify-end">
+            <button onClick={onClose} className="bg-[#0078d7] hover:bg-[#005a9e] text-white px-[1em] py-[0.4em] rounded text-[1em] font-bold shadow-sm">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function App() {
+  const [activeTool, setActiveTool] = useState("select");
+  const [appData, setAppData] = useState<any>(null);
+  const [powerStatus, setPowerStatus] = useState<any>(null);
+  const [tempSize, setTempSize] = useState({ x: "", y: "" });
+
+  // Modals & Menus
+  const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+
+  useEffect(() => {
+    invoke("get_app_data").then((data: any) => {
+      setAppData(data);
+      if (data?.config) {
+        setTempSize({
+          x: String(data.config.world_size_tiles_x || 32),
+          y: String(data.config.world_size_tiles_y || 20)
+        });
+      }
+    });
+    const interval = setInterval(() => {
+      invoke("get_power_status").then(setPowerStatus);
+    }, 1000);
+
+    // Close menus on global click
+    const closeMenu = () => setActiveMenu(null);
+    window.addEventListener("click", closeMenu);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("click", closeMenu);
+    };
+  }, []);
+
+  const handleConfigChange = (updates: Record<string, any>) => {
+    if (!appData) return;
+    const newConfig = { ...appData.config, ...updates };
+    const newData = { ...appData, config: newConfig };
+    setAppData(newData);
+    invoke("update_config", { config: newConfig });
+  };
+
+  const theme = appData?.config?.theme || {
+    panel_bg: "#2d2d2d",
+    workspace_bg: "#1e1e1e",
+    border: "#1c1c1c",
+    text: "#d3d3d3",
+    accent: "#0078d7"
+  };
+
+  // Apply font size to root. Default 12px if not set.
+  const uiFontSize = appData?.config?.font_size_px || 12;
+
+  const ToolButton = ({ id, icon: Icon, label }: { id: string, icon: any, label: string }) => (
+    <button
+      onClick={() => setActiveTool(id)}
+      className={cn(
+        "w-[2.2em] h-[2.2em] flex items-center justify-center rounded-sm transition-colors",
+        activeTool === id ? "bg-[#4b4b4b] text-white shadow-inner" : "text-[#b0b0b0] hover:bg-[#3d3d3d]"
+      )}
+      title={label}
+    >
+      <Icon size={18} strokeWidth={1.5} style={{ width: '1.4em', height: '1.4em' }} />
+    </button>
+  );
+
+  return (
+    <div
+      className="h-screen w-screen flex flex-col overflow-hidden select-none font-sans relative"
+      style={{
+        backgroundColor: theme.workspace_bg,
+        color: theme.text,
+        fontSize: `${uiFontSize}px`
+      }}
+    >
+      <header className="h-[2.4em] border-b flex items-center px-[1em] gap-[1.2em] font-normal relative z-50" style={{ backgroundColor: theme.panel_bg, borderColor: theme.border }}>
+        <div className="flex items-center gap-[0.3em]">
+          <Menu size={14} className="text-[#888]" style={{ width: '1.1em', height: '1.1em' }} />
+          <span className="font-bold text-[0.85em] tracking-tighter opacity-70 ml-[0.3em]">EF</span>
+        </div>
+
+        {/* File Menu */}
+        <div className="relative">
+          <span
+            className={cn("hover:bg-[#4b4b4b] px-[0.6em] py-[0.3em] rounded-sm cursor-default transition-colors text-[0.9em]", activeMenu === "File" && "bg-[#4b4b4b]")}
+            onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === "File" ? null : "File"); }}
+          >
+            File
+          </span>
+          {activeMenu === "File" && (
+            <div className="absolute top-full left-0 mt-1 w-48 bg-[#2b2b2b] border border-[#1c1c1c] shadow-xl rounded-sm py-1 flex flex-col z-50 animate-in slide-in-from-top-1 duration-100">
+              <button className="text-left px-4 py-1.5 hover:bg-[#0078d7] hover:text-white transition-colors flex justify-between items-center group text-[0.9em]">
+                <span>New...</span> <span className="opacity-40 text-[0.8em] group-hover:text-white/80">Ctrl+N</span>
+              </button>
+              <button className="text-left px-4 py-1.5 hover:bg-[#0078d7] hover:text-white transition-colors flex justify-between items-center group text-[0.9em]">
+                <span>Open...</span> <span className="opacity-40 text-[0.8em] group-hover:text-white/80">Ctrl+O</span>
+              </button>
+              <div className="h-px bg-white/10 my-1 mx-2" />
+              <button
+                className="text-left px-4 py-1.5 hover:bg-[#0078d7] hover:text-white transition-colors text-[0.9em]"
+                onClick={() => { setIsPreferencesOpen(true); setActiveMenu(null); }}
+              >
+                Preferences...
+              </button>
+              <div className="h-px bg-white/10 my-1 mx-2" />
+              <button className="text-left px-4 py-1.5 hover:bg-[#0078d7] hover:text-white transition-colors text-[0.9em]">Exit</button>
+            </div>
+          )}
+        </div>
+
+        {["Edit", "Layout", "Simulation", "View", "Window", "Help"].map(m => (
+          <span key={m} className="hover:bg-[#4b4b4b] px-[0.6em] py-[0.3em] rounded-sm cursor-default text-[0.9em]">{m}</span>
+        ))}
+        <div className="flex-1" />
+        <span className="opacity-50 text-[0.85em]">Endfield Architect v0.1.0</span>
+      </header>
+
+      {/* ... ToolBar ... */}
+      <div className="h-[2.8em] border-b flex items-center px-[1.2em] gap-[1.5em]" style={{ backgroundColor: theme.panel_bg, borderColor: theme.border }}>
+        <div className="flex items-center gap-[0.6em] border-r pr-[1em]" style={{ borderColor: theme.border }}>
+          <div className="p-[0.2em] bg-[#4b4b4b] rounded shadow-inner">
+            {activeTool === 'select' && <MousePointer2 style={{ width: '1.2em', height: '1.2em' }} />}
+            {activeTool === 'move' && <Move style={{ width: '1.2em', height: '1.2em' }} />}
+            {activeTool === 'facility' && <Box style={{ width: '1.2em', height: '1.2em' }} />}
+            {activeTool === 'logistics' && <Link2 style={{ width: '1.2em', height: '1.2em' }} />}
+            {activeTool === 'eraser' && <Eraser style={{ width: '1.2em', height: '1.2em' }} />}
+          </div>
+          <ChevronDown style={{ width: '1em', height: '1em' }} className="opacity-50" />
+        </div>
+        <div className="flex items-center gap-[1em] text-[0.85em]">
+          <div className="flex items-center gap-[0.5em]">
+            <span className="opacity-60">Grid:</span>
+            <select className="bg-[#1e1e1e] border border-[#444] rounded px-[0.3em] text-white outline-none">
+              <option>64px</option>
+              <option>32px</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-[0.5em]">
+            <span className="opacity-60">Snap:</span>
+            <input type="checkbox" checked readOnly className="accent-[#0078d7]" />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 flex overflow-hidden">
+        <aside className="w-[3.2em] border-r flex flex-col items-center py-[0.6em] gap-[0.3em] group" style={{ backgroundColor: theme.panel_bg, borderColor: theme.border }}>
+          <ToolButton id="select" icon={MousePointer2} label="Select (V)" />
+          <ToolButton id="move" icon={Move} label="Move (M)" />
+          <div className="w-[1.8em] h-px my-[0.3em]" style={{ backgroundColor: theme.border }} />
+          <ToolButton id="facility" icon={Box} label="Facility Brush (B)" />
+          <ToolButton id="logistics" icon={Link2} label="Connection Tool (L)" />
+          <ToolButton id="eraser" icon={Eraser} label="Eraser (E)" />
+          <div className="w-[1.8em] h-px my-[0.3em]" style={{ backgroundColor: theme.border }} />
+          <ToolButton id="zoom" icon={Search} label="Zoom (Z)" />
+        </aside>
+
+        <main className="flex-1 relative overflow-hidden flex flex-col" style={{ backgroundColor: "#191919" }}>
+          <div className="h-[2.2em] flex items-center" style={{ backgroundColor: "#282828" }}>
+            <div className="h-full px-[1em] flex items-center gap-[0.5em] bg-[#323232] border-r border-[#1c1c1c] text-[0.85em] min-w-[120px]">
+              <span className="opacity-80">Untitled-1.json</span>
+              <span className="text-[0.8em] opacity-40">@ 100% (RGB/8)</span>
+              <div className="w-[1.2em] h-[1.2em] flex items-center justify-center hover:bg-[#c42b1c] rounded-sm ml-auto cursor-pointer">×</div>
+            </div>
+            <div className="flex-1 h-full bg-[#1e1e1e]" />
+          </div>
+          <div className="flex-1 relative bg-[#1e1e1e]">
+            <Viewport appData={appData} />
+          </div>
+        </main>
+
+        <aside className="w-[22em] border-l flex flex-col overflow-hidden" style={{ backgroundColor: theme.panel_bg, borderColor: theme.border }}>
+          <div className="flex-1 overflow-y-auto">
+
+            <PanelSection
+              title="Canvas Size"
+              bgColor="#2d2d2d88"
+              headerActions={
+                <button onClick={() => setIsPresetModalOpen(true)} className="p-1 hover:bg-white/10 rounded-sm" title="New Document / Presets"><PlusCircle size={14} style={{ width: '1.1em', height: '1.1em' }} /></button>
+              }
+            >
+              <div className="p-[1em] space-y-[1em]">
+                <div className="flex flex-col gap-[0.5em]">
+                  <span className="opacity-50 text-[0.75em] uppercase font-bold">Preset Documents</span>
+                  <select
+                    className="bg-[#1e1e1e] border border-[#444] px-[0.5em] h-[2.2em] rounded-sm text-[0.85em] text-white outline-none w-full"
+                    onChange={(e) => {
+                      const preset = appData?.config?.presets?.find((p: any) => p.id === e.target.value);
+                      if (preset) setTempSize({ x: String(preset.width), y: String(preset.height) });
+                    }}
+                  >
+                    <option value="custom">Custom Size</option>
+                    {appData?.config?.presets?.map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.name} ({p.width}x{p.height})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-[1em]">
+                  <div className="flex flex-col gap-[0.5em]">
+                    <span className="opacity-50 text-[0.75em] uppercase font-bold">Width</span>
+                    <div className="flex items-center gap-1 bg-[#1e1e1e] border border-[#444] px-[0.5em] h-[2.2em] rounded-sm focus-within:border-[#0078d7]">
+                      <input type="text" value={tempSize.x} onChange={(e) => setTempSize({ ...tempSize, x: e.target.value })} className="bg-transparent w-full outline-none text-white text-[0.9em] select-text" />
+                      <span className="text-[0.7em] opacity-30 italic">tile</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-[0.5em]">
+                    <span className="opacity-50 text-[0.75em] uppercase font-bold">Height</span>
+                    <div className="flex items-center gap-1 bg-[#1e1e1e] border border-[#444] px-[0.5em] h-[2.2em] rounded-sm focus-within:border-[#0078d7]">
+                      <input type="text" value={tempSize.y} onChange={(e) => setTempSize({ ...tempSize, y: e.target.value })} className="bg-transparent w-full outline-none text-white text-[0.9em] select-text" />
+                      <span className="text-[0.7em] opacity-30 italic">tile</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleConfigChange({ world_size_tiles_x: parseInt(tempSize.x) || 32, world_size_tiles_y: parseInt(tempSize.y) || 20 })}
+                  className="w-full h-[2.5em] bg-[#0078d7] hover:bg-[#005a9e] text-white font-bold text-[0.85em] rounded flex items-center justify-center gap-[0.5em] shadow-sm transition-all"
+                >
+                  <Check style={{ width: '1.2em', height: '1.2em' }} /> APPLY CHANGES
+                </button>
+              </div>
+            </PanelSection>
+
+            <PanelSection title="Transform">
+              <div className="p-[1em] space-y-[1em]">
+                <div className="flex flex-col gap-[0.5em]">
+                  <span className="opacity-50 text-[0.7em] uppercase font-bold text-sky-500/70">Selected Object</span>
+                  <div className="bg-[#1e1e1e] border border-[#444] px-2 py-2 rounded-sm text-[0.85em] truncate italic opacity-60">No facility selected</div>
+                </div>
+                <div className="grid grid-cols-2 gap-[0.8em] text-[0.85em]">
+                  <div className="flex flex-col gap-[0.4em]"><span className="opacity-50 text-[0.7em] uppercase font-bold">Pos X</span><input type="text" value="--" readOnly className="bg-[#1e1e1e] border border-[#444] px-2 h-[2em] outline-none opacity-40 rounded-sm" /></div>
+                  <div className="flex flex-col gap-[0.4em]"><span className="opacity-50 text-[0.7em] uppercase font-bold">Pos Y</span><input type="text" value="--" readOnly className="bg-[#1e1e1e] border border-[#444] px-2 h-[2em] outline-none opacity-40 rounded-sm" /></div>
+                </div>
+              </div>
+            </PanelSection>
+
+            <PanelSection title="Catalog" defaultOpen={true}>
+              <div className="h-48 overflow-y-auto p-1 grid grid-cols-3 gap-1 bg-[#222]">
+                {appData?.facilities?.slice(0, 15).map((f: any) => (
+                  <div key={f.id} className="aspect-square bg-[#323232] border border-[#444] p-1 flex items-center justify-center hover:border-[#0078d7] cursor-pointer relative group">
+                    <img src={f.icon} alt={f.name} className="max-w-full max-h-full" />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[0.7em] text-center p-1 leading-tight">{f.name}</div>
+                  </div>
+                ))}
+              </div>
+            </PanelSection>
+
+            <PanelSection title="Power Console" bgColor="#2d2d2d">
+              <div className="p-[1em] space-y-[0.8em]">
+                <div className="flex flex-col gap-[0.4em]">
+                  <div className="flex justify-between text-[0.75em] opacity-70"><span>LOAD BALANCE</span><span className={cn(powerStatus?.power_balance >= 0 ? "text-green-500" : "text-red-500 font-bold")}>{powerStatus?.power_balance?.toFixed(1) || "0.0"} MW</span></div>
+                  <div className="h-[0.5em] bg-black rounded-full overflow-hidden">
+                    <div className="h-full bg-[#0078d7]" style={{ width: `${Math.min(100, (powerStatus?.total_consumption / (powerStatus?.total_generation || 1)) * 100)}%` }} />
+                  </div>
+                </div>
+                <div className="space-y-[0.4em] opacity-60 text-[0.75em]">
+                  <div className="flex justify-between"><div className="flex items-center gap-1"><Zap style={{ width: '1em', height: '1em' }} /> Generation:</div><span>{powerStatus?.total_generation?.toFixed(1) || "0.0"}</span></div>
+                  <div className="flex justify-between"><div className="flex items-center gap-1"><Cpu style={{ width: '1em', height: '1em' }} /> Consumption:</div><span>{powerStatus?.total_consumption?.toFixed(1) || "0.0"}</span></div>
+                </div>
+              </div>
+            </PanelSection>
+
+          </div>
+        </aside>
+      </div>
+
+      <footer className="h-[2em] border-t flex items-center px-[1em] gap-[1.5em] text-[0.85em] opacity-60" style={{ backgroundColor: theme.panel_bg, borderColor: theme.border }}>
+        <div className="flex items-center gap-[0.5em]"><span className="font-bold">100%</span></div>
+        <div className="h-[1em] w-px bg-white/10" />
+        <div className="flex items-center gap-[1em]"><span>Doc: 1.2M / 4.5M</span><span>Coord: 1024, 768</span><span>Scale: 1:1</span></div>
+        <div className="flex-1" />
+        <div className="flex items-center gap-[0.5em]"><Info style={{ width: '1em', height: '1em' }} /><span>System Ready</span></div>
+      </footer>
+      <PresetModal
+        isOpen={isPresetModalOpen}
+        onClose={() => setIsPresetModalOpen(false)}
+        appData={appData}
+        onConfigChange={handleConfigChange}
+        onSelectPreset={(w, h) => setTempSize({ x: w, y: h })}
+      />
+
+      {/* Preferences Modal */}
+      <PreferencesModal
+        isOpen={isPreferencesOpen}
+        onClose={() => setIsPreferencesOpen(false)}
+        config={appData?.config}
+        onConfigChange={handleConfigChange}
+      />
+    </div>
+  );
+}
