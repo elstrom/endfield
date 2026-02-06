@@ -252,6 +252,7 @@ export default function App() {
   // Modals & Menus
   const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
+  const [isFacilitiesPanelOpen, setIsFacilitiesPanelOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
   useEffect(() => {
@@ -389,16 +390,66 @@ export default function App() {
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        <aside className="w-[3.2em] border-r flex flex-col items-center py-[0.6em] gap-[0.3em] group" style={{ backgroundColor: theme.panel_bg, borderColor: theme.border }}>
-          <ToolButton id="select" icon={MousePointer2} label="Select (V)" />
-          <ToolButton id="move" icon={Move} label="Move (M)" />
-          <div className="w-[1.8em] h-px my-[0.3em]" style={{ backgroundColor: theme.border }} />
-          <ToolButton id="facility" icon={Box} label="Facility Brush (B)" />
-          <ToolButton id="logistics" icon={Link2} label="Connection Tool (L)" />
-          <ToolButton id="eraser" icon={Eraser} label="Eraser (E)" />
-          <div className="w-[1.8em] h-px my-[0.3em]" style={{ backgroundColor: theme.border }} />
-          <ToolButton id="zoom" icon={Search} label="Zoom (Z)" />
+        <aside className="w-[3.2em] border-r flex flex-col items-center py-[0.6em] gap-[0.3em] group z-20 relative" style={{ backgroundColor: theme.panel_bg, borderColor: theme.border }}>
+          <button
+            onClick={() => {
+              setActiveTool("facility");
+              setIsFacilitiesPanelOpen(!isFacilitiesPanelOpen);
+            }}
+            className={cn(
+              "w-[2.2em] h-[2.2em] flex items-center justify-center rounded-sm transition-colors relative",
+              activeTool === "facility" ? "bg-[#4b4b4b] text-white shadow-inner" : "text-[#b0b0b0] hover:bg-[#3d3d3d]"
+            )}
+            title="Facility (B)"
+          >
+            <Box size={18} strokeWidth={1.5} style={{ width: '1.4em', height: '1.4em' }} />
+            {/* Indicator arrow for flyout */}
+            <div className="absolute bottom-[2px] right-[2px] w-0 h-0 border-l-[3px] border-l-transparent border-t-[3px] border-t-transparent border-r-[3px] border-r-white/50 border-b-[3px] border-b-white/50 rotate-45" />
+          </button>
         </aside>
+
+        {/* Facilities Flyout Panel */}
+        {isFacilitiesPanelOpen && activeTool === "facility" && (
+          <div
+            className="absolute left-[3.2em] top-0 bottom-0 w-[18em] z-10 flex flex-col shadow-2xl animate-in slide-in-from-left-2 duration-200 border-r"
+            style={{ backgroundColor: "#252525", borderColor: theme.border }}
+          >
+            <div className="h-[2.8em] flex items-center px-[1em] justify-between border-b" style={{ borderColor: theme.border, backgroundColor: theme.panel_bg }}>
+              <span className="text-[0.8em] font-bold uppercase tracking-wider opacity-90">Facilities</span>
+              <button
+                onClick={() => setIsFacilitiesPanelOpen(false)}
+                className="hover:bg-white/10 p-1 rounded-sm transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 space-y-1 bg-[#1e1e1e]">
+              {!appData?.facilities ? (
+                <div className="p-4 text-center text-white/40 text-sm">Loading data...</div>
+              ) : appData.facilities.length === 0 ? (
+                <div className="p-4 text-center text-white/40 text-sm">No facilities found.</div>
+              ) : (
+                appData.facilities.map((f: any) => (
+                  <div
+                    key={f.id}
+                    className="flex items-center gap-3 p-2 hover:bg-[#0078d7] hover:text-white rounded-sm cursor-pointer group transition-all border border-transparent hover:border-white/10"
+                    onClick={() => {
+                      // In a real app, this might select the sub-tool/brush
+                      // For now just logging or keeping selection
+                    }}
+                  >
+                    <div className="w-8 h-8 rounded bg-[#2b2b2b] p-1 flex items-center justify-center border border-white/5 group-hover:border-white/20 group-hover:bg-white/10 shrink-0">
+                      <img src={f.icon} alt={f.name} className="max-w-full max-h-full opacity-90 group-hover:opacity-100" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[0.85em] font-bold leading-tight decoration-clone truncate">{f.name}</span>
+                      <span className="text-[0.7em] opacity-40 group-hover:opacity-80">{f.width}x{f.height}</span>
+                    </div>
+                  </div>
+                )))}
+            </div>
+          </div>
+        )}
 
         <main className="flex-1 relative overflow-hidden flex flex-col" style={{ backgroundColor: "#191919" }}>
           <div className="h-[2.2em] flex items-center" style={{ backgroundColor: "#282828" }}>
