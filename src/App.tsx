@@ -6,18 +6,13 @@ import {
   Box,
   Link2,
   Eraser,
-  Search,
-  Layers,
   Info,
   Zap,
   Cpu,
   Menu,
   ChevronDown,
   ChevronRight,
-  Window as WindowIcon,
-  Plus,
   Check,
-  Settings,
   X,
   PlusCircle,
   Trash2
@@ -254,11 +249,15 @@ export default function App() {
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [isFacilitiesPanelOpen, setIsFacilitiesPanelOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const [mouseGrid, setMouseGrid] = useState({ x: 0, y: 0 });
 
   const [dragState, setDragState] = useState<{ id: string | null, icon: string | null, x: number, y: number }>({ id: null, icon: null, x: 0, y: 0 });
+  const clearDragState = () => {
+    console.log("App: clearDragState called");
+    setDragState({ id: null, icon: null, x: 0, y: 0 });
+  };
 
   useEffect(() => {
+    (window as any).clearDragState = clearDragState;
     invoke("get_app_data").then((data: any) => {
       setAppData(data);
       if (data?.config) {
@@ -291,7 +290,7 @@ export default function App() {
     };
 
     window.addEventListener("mousemove", handleGlobalMouseMove);
-    window.addEventListener("mouseup", handleGlobalMouseUp);
+    // window.addEventListener("mouseup", handleGlobalMouseUp); // DISABLED: Viewport now handles drop -> clear flow
 
     // Close menus on global click
     const closeMenu = () => setActiveMenu(null);
@@ -351,18 +350,6 @@ export default function App() {
   // Apply font size to root. Default 12px if not set.
   const uiFontSize = appData?.config?.font_size_px || 12;
 
-  const ToolButton = ({ id, icon: Icon, label }: { id: string, icon: any, label: string }) => (
-    <button
-      onClick={() => setActiveTool(id)}
-      className={cn(
-        "w-[2.2em] h-[2.2em] flex items-center justify-center rounded-sm transition-colors",
-        activeTool === id ? "bg-[#4b4b4b] text-white shadow-inner" : "text-[#b0b0b0] hover:bg-[#3d3d3d]"
-      )}
-      title={label}
-    >
-      <Icon size={18} strokeWidth={1.5} style={{ width: '1.4em', height: '1.4em' }} />
-    </button>
-  );
 
   return (
     <div
@@ -516,7 +503,7 @@ export default function App() {
             <div className="flex-1 h-full bg-[#1e1e1e]" />
           </div>
           <div className="flex-1 relative bg-[#1e1e1e]">
-            <Viewport appData={appData} draggedFacilityId={dragState.id} />
+            <Viewport appData={appData} draggedFacilityId={dragState.id} onDropFinished={clearDragState} />
           </div>
         </main>
 

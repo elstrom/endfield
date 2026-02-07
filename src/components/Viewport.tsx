@@ -17,10 +17,11 @@ declare global {
         placedFacilities: any[];
         config: any;
         viewportState?: any; // Debug access
+        clearDragState: () => void;
     }
 }
 
-export function Viewport({ appData, draggedFacilityId }: { appData: any, draggedFacilityId: string | null }) {
+export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appData: any, draggedFacilityId: string | null, onDropFinished?: () => void }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const appRef = useRef<PIXI.Application | null>(null);
     const worldRef = useRef<PIXI.Container | null>(null);
@@ -28,7 +29,16 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
     const draggedFacilityIdRef = useRef<string | null>(null);
     const mousePosRef = useRef<{ x: number, y: number }>({ x: 0, y: 0 });
 
-    useEffect(() => { draggedFacilityIdRef.current = draggedFacilityId; }, [draggedFacilityId]);
+    useEffect(() => {
+        debugLog("[ViewportInteraction] Mount");
+        draggedFacilityIdRef.current = draggedFacilityId;
+        return () => debugLog("[ViewportInteraction] Unmount");
+    }, []);
+
+    useEffect(() => {
+        debugLog("[ViewportInteraction] draggedFacilityId updated to:", draggedFacilityId);
+        draggedFacilityIdRef.current = draggedFacilityId;
+    }, [draggedFacilityId]);
 
     const { placedFacilities, edges, addFacility, updateFacility, setMovingFacilityId, addEdge, isColliding } = useSandbox();
     const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
@@ -71,10 +81,14 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
     }, []);
 
     // Scene Rendering (Facilities & Topology)
-    useEffect(() => {
-        if (!containerRef.current || !appRef.current || !worldRef.current || !config) return;
-        debugLog("[ViewportInteraction] Render Scene Triggered");
+    const renderScene = () => {
+        if (!containerRef.current || !appRef.current || !worldRef.current || !config || !isReadyRef.current) {
+            debugLog("[ViewportInteraction] renderScene skipped (not ready)");
+            return;
+        }
+
         const world = worldRef.current;
+        debugLog("[ViewportInteraction] renderScene starting", { facilities: placedFacilities.length, edges: edges.length });
 
         let facilitiesLayer = world.children.find(c => c.label === "facilities") as PIXI.Container;
         if (!facilitiesLayer) {
@@ -90,119 +104,120 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
             world.addChildAt(topologyLayer, 0); // Below facilities
         }
 
-        const renderScene = async () => {
-            facilitiesLayer.removeChildren();
-            topologyLayer.clear();
+        facilitiesLayer.removeChildren();
+        topologyLayer.clear();
 
-            const edgeColor = config.visuals?.colors?.topology_edge ? parseInt(config.visuals.colors.topology_edge.replace('#', '0x')) : 0x000000;
-            const edgeAlpha = config.visuals?.opacity?.topology || 1;
+        const edgeColor = config.visuals?.colors?.topology_edge ? parseInt(config.visuals.colors.topology_edge.replace('#', '0x')) : 0x000000;
+        const edgeAlpha = config.visuals?.opacity?.topology || 1;
 
-            topologyLayer.lineStyle(2, edgeColor, edgeAlpha);
-            for (const edge of edges) {
-                const from = placedFacilities.find(f => f.instanceId === edge.fromId);
-                const to = placedFacilities.find(f => f.instanceId === edge.toId);
-                if (!from || !to) continue;
+        topologyLayer.lineStyle(2, edgeColor, edgeAlpha);
+        for (const edge of edges) {
+            const from = placedFacilities.find(f => f.instanceId === edge.fromId);
+            const to = placedFacilities.find(f => f.instanceId === edge.toId);
+            if (!from || !to) continue;
 
-                const fromMeta = appData.facilities.find((f: any) => f.id === from.facilityId);
-                const toMeta = appData.facilities.find((f: any) => f.id === to.facilityId);
+            const fromMeta = appData.facilities.find((f: any) => f.id === from.facilityId);
+            const toMeta = appData.facilities.find((f: any) => f.id === to.facilityId);
 
-                const fromX = from.x + (fromMeta?.width || 1) * GRID_SIZE / 2;
-                const fromY = from.y + (fromMeta?.height || 1) * GRID_SIZE / 2;
-                const toX = to.x + (toMeta?.width || 1) * GRID_SIZE / 2;
-                const toY = to.y + (toMeta?.height || 1) * GRID_SIZE / 2;
+            const fromX = from.x + (fromMeta?.width || 1) * GRID_SIZE / 2;
+            const fromY = from.y + (fromMeta?.height || 1) * GRID_SIZE / 2;
+            const toX = to.x + (toMeta?.width || 1) * GRID_SIZE / 2;
+            const toY = to.y + (toMeta?.height || 1) * GRID_SIZE / 2;
 
-                topologyLayer.moveTo(fromX, fromY).lineTo(toX, toY);
-            }
+            topologyLayer.moveTo(fromX, fromY).lineTo(toX, toY);
+        }
 
-            for (const pf of placedFacilities) {
-                const meta = appData.facilities.find((f: any) => f.id === pf.facilityId);
-                if (!meta) continue;
+        for (const pf of placedFacilities) {
+            const meta = appData.facilities.find((f: any) => f.id === pf.facilityId);
+            if (!meta) continue;
 
-                const facilityContainer = new PIXI.Container();
-                facilityContainer.x = pf.x;
-                facilityContainer.y = pf.y;
+            const facilityContainer = new PIXI.Container();
+            facilityContainer.x = pf.x;
+            facilityContainer.y = pf.y;
 
-                // INTERACTION: Selectable
-                facilityContainer.eventMode = 'static';
-                facilityContainer.cursor = 'pointer';
-                facilityContainer.on('pointerdown', (e) => {
-                    e.stopPropagation(); // Prevent panning/deselection
-                    debugLog("[Viewport] Selected Facility:", pf.instanceId);
-                    setSelectedFacilityId(pf.instanceId);
+            // INTERACTION: Selectable
+            facilityContainer.eventMode = 'static';
+            facilityContainer.cursor = 'pointer';
+            facilityContainer.on('pointerdown', (e) => {
+                e.stopPropagation(); // Prevent panning/deselection
+                debugLog("[Viewport] Selected Facility:", pf.instanceId);
+                setSelectedFacilityId(pf.instanceId);
 
-                    // NEW: Tell sandbox we are moving this one (ignore in collision)
-                    if (window.setMovingFacilityId) window.setMovingFacilityId(pf.instanceId);
+                // NEW: Tell sandbox we are moving this one (ignore in collision)
+                if (window.setMovingFacilityId) window.setMovingFacilityId(pf.instanceId);
 
-                    // Start Dragging Existing
-                    const state = interactionState.current;
-                    state.draggedExistingId = pf.instanceId;
+                // Start Dragging Existing
+                const state = interactionState.current;
+                state.draggedExistingId = pf.instanceId;
 
-                    // ARITHMETIC: Calculate Grid-Relative Offset
-                    if (worldRef.current) {
-                        const worldPos = worldRef.current.toLocal(e.global);
-                        state.dragStartOffset = {
-                            x: Math.floor((worldPos.x - pf.x) / GRID_SIZE),
-                            y: Math.floor((worldPos.y - pf.y) / GRID_SIZE)
-                        };
-                    }
-                });
+                // ARITHMETIC: Calculate Grid-Relative Offset
+                if (worldRef.current) {
+                    const worldPos = worldRef.current.toLocal(e.global);
+                    state.dragStartOffset = {
+                        x: Math.floor((worldPos.x - pf.x) / GRID_SIZE),
+                        y: Math.floor((worldPos.y - pf.y) / GRID_SIZE)
+                    };
+                }
+            });
 
-                const gfx = new PIXI.Graphics();
-                const color = meta.color ? parseInt(meta.color.replace('#', '0x')) : 0x555555;
-                const rot = (pf.rotation || 0) % 360;
-                const isRotated = rot === 90 || rot === 270;
-                const width = (isRotated ? meta.height : meta.width) * GRID_SIZE;
-                const height = (isRotated ? meta.width : meta.height) * GRID_SIZE;
+            const gfx = new PIXI.Graphics();
+            const color = meta.color ? parseInt(meta.color.replace('#', '0x')) : 0x555555;
+            const rot = (pf.rotation || 0) % 360;
+            const isRotated = rot === 90 || rot === 270;
+            const width = (isRotated ? meta.height : meta.width) * GRID_SIZE;
+            const height = (isRotated ? meta.width : meta.height) * GRID_SIZE;
 
-                gfx.beginFill(color);
+            gfx.beginFill(color);
+            gfx.drawRect(0, 0, width, height);
+            gfx.endFill();
+
+            if (pf.instanceId === selectedFacilityId) {
+                gfx.lineStyle(2, 0xffffff, 1);
                 gfx.drawRect(0, 0, width, height);
-                gfx.endFill();
-
-                if (pf.instanceId === selectedFacilityId) {
-                    gfx.lineStyle(2, 0xffffff, 1);
-                    gfx.drawRect(0, 0, width, height);
-                }
-
-                facilityContainer.addChild(gfx);
-
-                if (meta.ports) {
-                    for (const port of meta.ports) {
-                        const pPos = getRotatedPortPosition(port, meta.width, meta.height, pf.rotation || 0);
-                        const px = pPos.x * GRID_SIZE + GRID_SIZE / 2;
-                        const py = pPos.y * GRID_SIZE + GRID_SIZE / 2;
-
-                        const pGfx = new PIXI.Graphics();
-                        const pColor = port.type === 'input' ? 0x00ff00 : 0xff0000;
-                        pGfx.beginFill(pColor);
-                        pGfx.drawCircle(0, 0, 4);
-                        pGfx.endFill();
-                        pGfx.x = px;
-                        pGfx.y = py;
-                        pGfx.y = py;
-                        facilityContainer.addChild(pGfx);
-                    }
-                }
-
-                // Label
-                const label = new PIXI.Text({
-                    text: meta.name || meta.id,
-                    style: {
-                        fontFamily: 'Arial',
-                        fontSize: 10,
-                        fill: 0xffffff,
-                        align: 'center',
-                    }
-                });
-                label.anchor.set(0.5);
-                label.x = width / 2;
-                label.y = height / 2;
-                facilityContainer.addChild(label);
-
-                facilitiesLayer.addChild(facilityContainer);
             }
-        };
+
+            facilityContainer.addChild(gfx);
+
+            if (meta.ports) {
+                for (const port of meta.ports) {
+                    const pPos = getRotatedPortPosition(port, meta.width, meta.height, pf.rotation || 0);
+                    const px = pPos.x * GRID_SIZE + GRID_SIZE / 2;
+                    const py = pPos.y * GRID_SIZE + GRID_SIZE / 2;
+
+                    const pGfx = new PIXI.Graphics();
+                    const pColor = port.type === 'input' ? 0x00ff00 : 0xff0000;
+                    pGfx.beginFill(pColor);
+                    pGfx.drawCircle(0, 0, 4);
+                    pGfx.endFill();
+                    pGfx.x = px;
+                    pGfx.y = py;
+                    facilityContainer.addChild(pGfx);
+                }
+            }
+
+            // Label
+            const label = new PIXI.Text({
+                text: meta.name || meta.id,
+                style: {
+                    fontFamily: 'Arial',
+                    fontSize: 10,
+                    fill: 0xffffff,
+                    align: 'center',
+                }
+            });
+            label.anchor.set(0.5);
+            label.x = width / 2;
+            label.y = height / 2;
+            facilityContainer.addChild(label);
+
+            facilitiesLayer.addChild(facilityContainer);
+        }
+        debugLog("[ViewportInteraction] Goal Print: renderScene completed");
+    };
+
+    useEffect(() => {
         renderScene();
-    }, [placedFacilities, edges, selectedFacilityId, appData, config, GRID_SIZE]);
+    }, [placedFacilities, edges, selectedFacilityId, config, GRID_SIZE]);
 
     // --- COMPONENT STATE REF ---
     // Moving interaction state to refs to persist across re-renders without re-init
@@ -223,14 +238,16 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
     });
 
     // --- PIXI SETUP ---
+    const isReadyRef = useRef(false);
+
     useEffect(() => {
-        if (!containerRef.current || !config || !interactionState.current) return;
+        if (!containerRef.current || !config) return;
         const GRID_SIZE = config.grid_size || 64;
 
-        // Cleanup previous app if exists
         if (appRef.current) {
-            appRef.current.destroy(true, { children: true, texture: true });
-            appRef.current = null;
+            // If app exists, we might just need to update background
+            appRef.current.renderer.background.color = config.theme?.workspace_bg ? parseInt(config.theme.workspace_bg.replace('#', '0x')) : 0x1e1e1e;
+            return;
         }
 
         const app = new PIXI.Application();
@@ -240,10 +257,10 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
                 resizeTo: containerRef.current!,
                 backgroundColor: config.theme?.workspace_bg ? parseInt(config.theme.workspace_bg.replace('#', '0x')) : 0x1e1e1e,
                 antialias: true,
-                resolution: window.devicePixelRatio || 1,
+                resolution: 1,
             });
 
-            if (!containerRef.current) return; // safety check after await
+            if (!containerRef.current) return;
             containerRef.current.appendChild(app.canvas);
             appRef.current = app;
 
@@ -309,11 +326,13 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
                 state.initialized = true;
             }
 
-            // Apply specific initial transform
             world.pivot.set(state.currentPivot.x, state.currentPivot.y);
             world.position.set(app.screen.width / 2, app.screen.height / 2);
             world.scale.set(state.currentZoom);
             world.rotation = state.currentRotation;
+
+            isReadyRef.current = true;
+            renderScene(); // Explicit first render
 
 
             // --- TICKER ---
@@ -413,7 +432,7 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
                         gfx.y = snapY;
                         previewLayer.addChild(gfx);
 
-                        debugLog("[ViewportInteraction] Previewing placement at", snapX, snapY, "Rot:", rotation);
+                        // debugLog("[ViewportInteraction] Previewing placement at", snapX, snapY, "Rot:", rotation);
                     }
                 }
 
@@ -532,51 +551,50 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
             } else {
                 // Facility Rotation
                 if (e.code === "KeyR") {
-                    if (state.draggedExistingId) return;
+                    debugLog("[ViewportInteraction] KeyR Pressed", {
+                        selected: window.selectedFacilityId,
+                        draggedExisting: state.draggedExistingId,
+                        draggedNew: draggedFacilityIdRef.current
+                    });
 
+                    // Priority 1: Rotate what is currently being dragged (Existing)
+                    if (state.draggedExistingId) {
+                        const pf = window.placedFacilities?.find(f => f.instanceId === state.draggedExistingId);
+                        const meta = window.appData?.facilities?.find((m: any) => m.id === pf?.facilityId);
+                        if (pf && meta) {
+                            const newRot = (pf.rotation + 90) % 360;
+
+                            // CRITICAL: Rotate the drag offset so the mouse stays on the same part of the building
+                            const oldOffset = state.dragStartOffset;
+                            // Rotate offset (x,y) -> (h-1-y, x)
+                            state.dragStartOffset = {
+                                x: (meta.height || 1) - 1 - oldOffset.y,
+                                y: oldOffset.x
+                            };
+
+                            (window as any).updateFacility(pf.instanceId, { rotation: newRot });
+                            debugLog("[ViewportInteraction] Rotated Dragging Facility:", pf.instanceId, "New Offset:", state.dragStartOffset);
+                        }
+                        return;
+                    }
+
+                    // Priority 2: Rotate Placement Preview
+                    if (draggedFacilityIdRef.current) {
+                        state.placementRotation = (state.placementRotation + 90) % 360;
+                        debugLog("[ViewportInteraction] Rotated Placement Preview to:", state.placementRotation);
+                        return;
+                    }
+
+                    // Priority 3: Rotate Selected Facility in-place
                     if (window.selectedFacilityId) {
                         const pf = window.placedFacilities?.find(f => f.instanceId === window.selectedFacilityId);
-                        const meta = window.appData?.facilities?.find((m: any) => m.id === pf?.facilityId);
-
-                        if (pf && meta) {
-                            const oldRot = pf.rotation || 0;
-                            const newRot = (oldRot + 90) % 360;
-
-                            // Arithmetic: Rotate around Center
-                            // 1. Get current bounding box
-                            const isOldRot = oldRot % 180 === 90;
-                            const wo = (isOldRot ? meta.height : meta.width) * GRID_SIZE;
-                            const ho = (isOldRot ? meta.width : meta.height) * GRID_SIZE;
-
-                            // 2. Get center
-                            const cx = pf.x + wo / 2;
-                            const cy = pf.y + ho / 2;
-
-                            // 3. Get new bounding box
-                            const isNewRot = newRot % 180 === 90;
-                            const wn = (isNewRot ? meta.height : meta.width) * GRID_SIZE;
-                            const hn = (isNewRot ? meta.width : meta.height) * GRID_SIZE;
-
-                            // 4. Calculate new top-left to keep center
-                            let nx = cx - wn / 2;
-                            let ny = cy - hn / 2;
-
-                            // 5. Grid Snap
-                            nx = Math.floor(nx / GRID_SIZE) * GRID_SIZE;
-                            ny = Math.floor(ny / GRID_SIZE) * GRID_SIZE;
-
-                            debugLog("[ViewportInteraction] Rotating Around Center:", { pfX: pf.x, pfY: pf.y, nx, ny });
-
-                            // Update both rotation AND position to maintain center
-                            (window as any).updateFacility(window.selectedFacilityId, {
-                                rotation: newRot,
-                                x: nx,
-                                y: ny
-                            });
+                        if (pf) {
+                            const newRot = (pf.rotation + 90) % 360;
+                            // Anchored Rotation: keep top-left (pf.x, pf.y) the same. 
+                            // This is more predictable for grid-based building.
+                            (window as any).updateFacility(pf.instanceId, { rotation: newRot });
+                            debugLog("[ViewportInteraction] Rotated Selected Facility (Anchored):", pf.instanceId, "to", newRot);
                         }
-                    } else {
-                        // Rotate Placement Preview
-                        state.placementRotation = (state.placementRotation + 90) % 360;
                     }
                 }
             }
@@ -636,9 +654,9 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
         };
 
         const onMouseUp = (e: MouseEvent) => {
-            debugLog("[ViewportInteraction] MouseUp");
             const draggedId = draggedFacilityIdRef.current;
             const state = interactionState.current;
+            debugLog("[ViewportInteraction] MouseUp", { draggedId, isDragging: state.isDragging, draggedExistingId: state.draggedExistingId });
 
             // 1. Handle Placement
             if (draggedId && appRef.current && worldRef.current && containerRef.current) {
@@ -671,9 +689,15 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
                         // Add with rotation
                         (window as any).addFacility(draggedId, snapX, snapY, rot);
                         debugLog("[ViewportInteraction] Dropping Facility:", draggedId, "at", snapX, snapY, "Rot:", rot);
+
+                        // IMPORTANT: Notify App to clear state AFTER we used the data
+                        if (onDropFinished) onDropFinished();
+                        if (window.clearDragState) window.clearDragState();
                     }
                 } else {
                     debugLog("[Viewport] Dropped outside bounds.");
+                    if (onDropFinished) onDropFinished();
+                    if (window.clearDragState) window.clearDragState();
                 }
             }
 
