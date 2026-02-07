@@ -1,21 +1,9 @@
 import { useState, useEffect } from "react";
 import { Viewport } from "./components/Viewport";
 import {
-  MousePointer2,
-  Move,
-  Box,
-  Link2,
-  Eraser,
-  Info,
-  Zap,
-  Cpu,
-  Menu,
-  ChevronDown,
-  ChevronRight,
-  Check,
-  X,
-  PlusCircle,
-  Trash2
+  Menu, Box, Link2, MousePointer2, Move, Eraser,
+  ChevronDown, ChevronRight, X, Info, Check, PlusCircle, Zap, Cpu,
+  Maximize2, Filter, Activity, CircleDot, Trash2
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { clsx, type ClassValue } from "clsx";
@@ -248,6 +236,7 @@ export default function App() {
   const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [activeSidePanel, setActiveSidePanel] = useState<"facilities" | "logistics" | null>(null);
+  const [activeFacilityId, setActiveFacilityId] = useState<string | null>(null); // NEW: Track selected facility
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
   const [dragState, setDragState] = useState<{ id: string | null, icon: string | null, x: number, y: number }>({ id: null, icon: null, x: 0, y: 0 });
@@ -306,12 +295,19 @@ export default function App() {
     };
     window.addEventListener('mouse-grid-update', handleMouseGrid);
 
+    const handleFacilitySelected = (e: any) => {
+      console.log("App: Facility Selected", e.detail.id);
+      setActiveFacilityId(e.detail.id);
+    };
+    window.addEventListener('facility-selected', handleFacilitySelected);
+
     return () => {
       clearInterval(interval);
       window.removeEventListener("click", closeMenu);
       window.removeEventListener("mousemove", handleGlobalMouseMove);
       window.removeEventListener("mouseup", handleGlobalMouseUp);
       window.removeEventListener('mouse-grid-update', handleMouseGrid);
+      window.removeEventListener('facility-selected', handleFacilitySelected);
       delete (window as any).updateFooterCoord;
     };
   }, [dragState.id]);
@@ -539,8 +535,7 @@ export default function App() {
         <aside className="w-[22em] border-l flex flex-col overflow-hidden" style={{ backgroundColor: theme.panel_bg, borderColor: theme.border }}>
           <div className="flex-1 overflow-y-auto">
 
-            <PanelSection
-              title="Canvas Size"
+            <PanelSection title="Canvas Size"
               bgColor="#2d2d2d88"
               headerActions={
                 <button onClick={() => setIsPresetModalOpen(true)} className="p-1 hover:bg-white/10 rounded-sm" title="New Document / Presets"><PlusCircle size={14} style={{ width: '1.1em', height: '1.1em' }} /></button>
@@ -584,19 +579,6 @@ export default function App() {
                 >
                   <Check style={{ width: '1.2em', height: '1.2em' }} /> APPLY CHANGES
                 </button>
-              </div>
-            </PanelSection>
-
-            <PanelSection title="Transform">
-              <div className="p-[1em] space-y-[1em]">
-                <div className="flex flex-col gap-[0.5em]">
-                  <span className="opacity-50 text-[0.7em] uppercase font-bold text-sky-500/70">Selected Object</span>
-                  <div className="bg-[#1e1e1e] border border-[#444] px-2 py-2 rounded-sm text-[0.85em] truncate italic opacity-60">No facility selected</div>
-                </div>
-                <div className="grid grid-cols-2 gap-[0.8em] text-[0.85em]">
-                  <div className="flex flex-col gap-[0.4em]"><span className="opacity-50 text-[0.7em] uppercase font-bold">Pos X</span><input type="text" value="--" readOnly className="bg-[#1e1e1e] border border-[#444] px-2 h-[2em] outline-none opacity-40 rounded-sm" /></div>
-                  <div className="flex flex-col gap-[0.4em]"><span className="opacity-50 text-[0.7em] uppercase font-bold">Pos Y</span><input type="text" value="--" readOnly className="bg-[#1e1e1e] border border-[#444] px-2 h-[2em] outline-none opacity-40 rounded-sm" /></div>
-                </div>
               </div>
             </PanelSection>
 
@@ -652,6 +634,168 @@ export default function App() {
         onConfigChange={handleConfigChange}
         onSelectPreset={(w, h) => setTempSize({ x: w, y: h })}
       />
+
+      {/* Floating Facility Detail Modal */}
+      {activeFacilityId && (
+        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#252525] border border-[#444] shadow-2xl rounded p-0 w-[40em] z-50 animate-in fade-in zoom-in-95 duration-100 font-sans text-sm">
+          {(() => {
+            const instanceId = activeFacilityId;
+            const pf = (window as any).placedFacilities?.find((f: any) => f.instanceId === instanceId);
+            const meta = appData?.facilities?.find((f: any) => f.id === pf?.facilityId);
+
+            if (!instanceId || !pf || !meta) return null;
+
+            // Find Recipes
+            const recipes = appData?.recipes?.filter((r: any) => r.facility_id === meta.id) || [];
+            const getItem = (id: string) => appData?.items?.find((i: any) => i.id === id);
+
+            return (
+              <div className="flex flex-col max-h-[80vh]">
+                <div className="flex items-center justify-between p-2 bg-[#2d2d2d] border-b border-[#444] select-none shrink-0" onMouseDown={() => { /* TODO: Drag Logic for Window */ }}>
+                  <span className="font-bold text-[0.9em] uppercase opacity-80 flex items-center gap-2"><Maximize2 size={12} /> Facility Detail</span>
+                  <button onClick={() => setActiveFacilityId(null)} className="hover:bg-white/10 p-1 rounded-sm transition-colors text-white/60 hover:text-white"><X size={14} /></button>
+                </div>
+
+                <div className="p-[1.5em] space-y-[1.5em] overflow-y-auto custom-scrollbar">
+                  <div className="flex gap-[1.5em]">
+                    {/* Left Column: Icon & Basic Info */}
+                    <div className="w-[12em] flex flex-col gap-[1em] shrink-0">
+                      <div className="aspect-square bg-[#222] border border-[#444] rounded flex items-center justify-center p-2 shadow-inner">
+                        <img src={meta.icon} className="max-w-full max-h-full drop-shadow-lg" />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <div className="text-[1.1em] font-bold leading-tight text-white/90">{meta.name}</div>
+                        <div className="text-[0.75em] opacity-40 font-mono select-text break-all">{meta.id}</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="px-[0.5em] py-[0.15em] bg-[#0078d7] text-white text-[0.7em] font-bold rounded uppercase shadow-sm">{meta.category || "General"}</span>
+                          <span className="px-[0.5em] py-[0.15em] bg-[#333] border border-[#444] text-white/70 text-[0.7em] font-bold rounded uppercase">Tier {meta.tier || 1}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Stats & Recipes */}
+                    <div className="flex-1 space-y-[1.5em]">
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 gap-px bg-white/5 border border-white/10 rounded overflow-hidden">
+                        <div className="bg-[#2a2a2a]/50 p-[0.8em] flex flex-col gap-[0.2em]">
+                          <span className="text-[0.65em] opacity-40 uppercase font-bold tracking-wider">Dimensions</span>
+                          <span className="text-[1em] font-mono text-white/80">{meta.width} x {meta.height}</span>
+                        </div>
+                        <div className="bg-[#2a2a2a]/50 p-[0.8em] flex flex-col gap-[0.2em]">
+                          <span className="text-[0.65em] opacity-40 uppercase font-bold tracking-wider">Power</span>
+                          <span className={cn("text-[1em] font-mono font-bold", (meta.power || 0) > 0 ? "text-red-400" : (meta.power_generation > 0 ? "text-emerald-400" : "opacity-50"))}>
+                            {meta.power_generation > 0 ? `+${meta.power_generation} MW` : `-${meta.power || 0} MW`}
+                          </span>
+                        </div>
+                        <div className="bg-[#2a2a2a]/50 p-[0.8em] flex flex-col gap-[0.2em]">
+                          <span className="text-[0.65em] opacity-40 uppercase font-bold tracking-wider">Rotation</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[1em] font-mono text-white/80">{pf.rotation}°</span>
+                            <div className="w-4 h-4 border border-white/20 rounded-full flex items-center justify-center transform" style={{ transform: `rotate(${pf.rotation}deg)` }}>
+                              <div className="w-0.5 h-2 bg-white/50 -mt-1" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-[#2a2a2a]/50 p-[0.8em] flex flex-col gap-[0.2em]">
+                          <span className="text-[0.65em] opacity-40 uppercase font-bold tracking-wider">IO Slots</span>
+                          <div className="flex gap-2 text-[0.9em] font-mono">
+                            <span title="Input Slots" className="text-sky-400 font-bold">IN: {meta.input_slots || 0}</span>
+                            <span className="opacity-10">|</span>
+                            <span title="Output Slots" className="text-orange-400 font-bold">OUT: {meta.output_slots || 0}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Features */}
+                      {(meta.is_filter || meta.throughput_limit || meta.ports) && (
+                        <div className="flex flex-wrap gap-[0.5em]">
+                          {meta.is_filter && <span className="px-2 py-1 bg-purple-500/10 text-purple-300 text-[0.75em] border border-purple-500/20 rounded flex items-center gap-1"><Filter size={12} /> Filter Capable</span>}
+                          {meta.throughput_limit && <span className="px-2 py-1 bg-yellow-500/10 text-yellow-300 text-[0.75em] border border-yellow-500/20 rounded flex items-center gap-1"><Activity size={12} /> Max Flow: {meta.throughput_limit}/s</span>}
+                          {meta.ports && <span className="px-2 py-1 bg-white/5 text-white/40 text-[0.75em] border border-white/10 rounded flex items-center gap-1"><CircleDot size={12} /> {meta.ports.length} Ports</span>}
+                        </div>
+                      )}
+
+                      {/* RECIPES SECTION */}
+                      {recipes.length > 0 && (
+                        <div className="space-y-[0.5em]">
+                          <div className="text-[0.75em] opacity-50 uppercase font-bold tracking-wider border-b border-white/10 pb-1">Compatible Recipes</div>
+                          <div className="grid gap-[0.5em]">
+                            {recipes.map((r: any) => (
+                              <div key={r.id} className="bg-[#1e1e1e] border border-[#333] p-[1em] rounded-md flex items-center justify-between gap-[1em] hover:bg-[#252525] hover:border-white/10 transition-colors group">
+                                {/* Inputs */}
+                                <div className="flex items-center gap-[0.8em]">
+                                  {r.inputs.map((input: any, idx: number) => {
+                                    const item = getItem(input.item_id);
+                                    if (!item) console.warn("Missing item input:", input.item_id, "for recipe:", r.id);
+                                    return (
+                                      <div key={idx} className="relative group/item" title={item?.name || input.item_id}>
+                                        <div className="w-[3.5em] h-[3.5em] bg-[#2a2a2a] border border-[#444] rounded flex items-center justify-center p-1.5 shadow-sm group-hover/item:border-[#0078d7] transition-colors">
+                                          {item?.icon ? (
+                                            <img
+                                              src={item.icon}
+                                              className="max-w-full max-h-full drop-shadow-md"
+                                              onError={(e) => console.error("Image Load FAIL:", e.currentTarget.src)}
+                                            />
+                                          ) : (
+                                            <span className="text-red-500 text-xs">?</span>
+                                          )}
+                                        </div>
+                                        <div className="absolute -bottom-1.5 -right-1.5 bg-[#111] text-white text-[0.75em] font-bold font-mono px-1.5 py-0.5 rounded border border-[#333] shadow-md z-10">{input.amount}</div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Process Arrow & Time */}
+                                <div className="flex flex-col items-center justify-center opacity-40 group-hover:opacity-100 transition-opacity px-2 gap-1">
+                                  <div className="w-full h-px bg-white/20 relative w-[3em]">
+                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-1.5 h-1.5 border-t border-r border-white/20 rotate-45 transform" />
+                                  </div>
+                                  <span className="text-[0.7em] font-mono font-bold bg-[#111] px-1.5 rounded text-white/60">{r.time}s</span>
+                                </div>
+
+                                {/* Outputs */}
+                                <div className="flex items-center gap-[0.8em]">
+                                  {r.outputs.map((output: any, idx: number) => {
+                                    const item = getItem(output.item_id);
+                                    if (!item) console.warn("Missing item output:", output.item_id, "for recipe:", r.id);
+                                    return (
+                                      <div key={idx} className="relative group/item" title={item?.name || output.item_id}>
+                                        <div className="w-[3.5em] h-[3.5em] bg-[#2a2a2a] border border-[#444] rounded flex items-center justify-center p-1.5 shadow-sm group-hover/item:border-[#0078d7] transition-colors ring-1 ring-white/5">
+                                          {item?.icon ? (
+                                            <img
+                                              src={item.icon}
+                                              className="max-w-full max-h-full drop-shadow-md"
+                                              onError={(e) => console.error("Image Load FAIL:", e.currentTarget.src)}
+                                            />
+                                          ) : (
+                                            <span className="text-red-500 text-xs">?</span>
+                                          )}
+                                        </div>
+                                        <div className="absolute -bottom-1.5 -right-1.5 bg-[#0078d7] text-white text-[0.75em] font-bold font-mono px-1.5 py-0.5 rounded border border-[#005a9e] shadow-md z-10">{output.amount}</div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="pt-[1em] border-t border-white/5 flex justify-between text-[0.75em] opacity-30 font-mono">
+                    <span>Pos: {Math.floor(pf.x / (appData?.config?.grid_size || 64))}, {Math.floor(pf.y / (appData?.config?.grid_size || 64))}</span>
+                    <span>UUID: {pf.instanceId}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {/* Preferences Modal */}
       <PreferencesModal

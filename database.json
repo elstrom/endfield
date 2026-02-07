@@ -34,10 +34,10 @@
     "world_size_tiles_y": 40,
     "zoom_level": 1,
     "logistics_flow_rate_units_per_s": 0.5,
-    "relay_transmission_range_m": 80.0,
-    "electric_pylon_distribution_range_m": 30.0,
-    "thermal_bank_generation_mw": 220.0,
-    "thermal_bank_fuel_duration_s": 40.0,
+    "relay_transmission_range_m": 80,
+    "electric_pylon_distribution_range_m": 30,
+    "thermal_bank_generation_mw": 220,
+    "thermal_bank_fuel_duration_s": 40,
     "slot_capacity": 50
   },
   "facilities": [
@@ -90,7 +90,7 @@
           "y": 2
         }
       ],
-      "power": 20.0,
+      "power": 20,
       "width": 3,
       "category": "facilities",
       "input_slots": 2,
@@ -117,7 +117,7 @@
           "y": 0
         }
       ],
-      "power": 5.0,
+      "power": 5,
       "width": 3,
       "category": "facilities",
       "input_slots": 2,
@@ -214,7 +214,7 @@
           "y": 5
         }
       ],
-      "power": 20.0,
+      "power": 20,
       "width": 4,
       "category": "facilities",
       "input_slots": 2,
@@ -269,7 +269,7 @@
           "y": 2
         }
       ],
-      "power": 5.0,
+      "power": 5,
       "width": 3,
       "category": "facilities",
       "input_slots": 2,
@@ -296,7 +296,7 @@
           "y": 0
         }
       ],
-      "power": 5.0,
+      "power": 5,
       "width": 3,
       "category": "facilities",
       "input_slots": 2,
@@ -351,7 +351,7 @@
           "y": 2
         }
       ],
-      "power": 5.0,
+      "power": 5,
       "width": 3,
       "category": "facilities",
       "input_slots": 2,
@@ -406,7 +406,7 @@
           "y": 2
         }
       ],
-      "power": 5.0,
+      "power": 5,
       "width": 3,
       "category": "facilities",
       "input_slots": 2,
@@ -461,7 +461,7 @@
           "y": 2
         }
       ],
-      "power": 5.0,
+      "power": 5,
       "width": 3,
       "category": "facilities",
       "input_slots": 2,
@@ -516,7 +516,7 @@
           "y": 2
         }
       ],
-      "power": 10.0,
+      "power": 10,
       "width": 3,
       "category": "facilities",
       "input_slots": 2,
@@ -543,7 +543,7 @@
           "y": 0
         }
       ],
-      "power": 5.0,
+      "power": 5,
       "width": 3,
       "category": "facilities",
       "input_slots": 2,
@@ -598,7 +598,7 @@
           "y": 2
         }
       ],
-      "power": 20.0,
+      "power": 20,
       "width": 3,
       "category": "facilities",
       "input_slots": 2,
@@ -695,7 +695,7 @@
           "y": 3
         }
       ],
-      "power": 10.0,
+      "power": 10,
       "width": 6,
       "category": "facilities",
       "input_slots": 2,
@@ -750,7 +750,7 @@
           "y": 2
         }
       ],
-      "power": 5.0,
+      "power": 5,
       "width": 3,
       "category": "facilities",
       "input_slots": 2,
@@ -777,7 +777,7 @@
           "y": 0
         }
       ],
-      "power": 0.0,
+      "power": 0,
       "width": 1,
       "category": "logistics",
       "input_slots": 0,
@@ -820,7 +820,7 @@
           "y": 0
         }
       ],
-      "power": 0.0,
+      "power": 0,
       "width": 1,
       "category": "logistics",
       "input_slots": 0,
@@ -862,7 +862,7 @@
           "y": 0
         }
       ],
-      "power": 0.0,
+      "power": 0,
       "width": 1,
       "category": "logistics",
       "input_slots": 0,
@@ -904,7 +904,7 @@
           "y": 0
         }
       ],
-      "power": 0.0,
+      "power": 0,
       "width": 1,
       "category": "logistics",
       "input_slots": 0,
@@ -932,7 +932,7 @@
           "y": 0
         }
       ],
-      "power": 0.0,
+      "power": 0,
       "width": 1,
       "category": "logistics",
       "input_slots": 0,
@@ -975,7 +975,7 @@
           "y": 0
         }
       ],
-      "power": 0.0,
+      "power": 0,
       "width": 1,
       "category": "logistics",
       "input_slots": 0,
@@ -1017,7 +1017,7 @@
           "y": 0
         }
       ],
-      "power": 0.0,
+      "power": 0,
       "width": 1,
       "category": "logistics",
       "input_slots": 0,
@@ -1059,7 +1059,7 @@
           "y": 0
         }
       ],
-      "power": 0.0,
+      "power": 0,
       "width": 1,
       "category": "logistics",
       "input_slots": 0,
@@ -1087,12 +1087,12 @@
           "y": 1
         }
       ],
-      "power": 0.0,
+      "power": 0,
       "width": 3,
       "category": "logistics",
       "input_slots": 2,
       "output_slots": 1,
-      "capacity": 1000.0,
+      "capacity": 1000,
       "tier": 1
     },
     {
@@ -1109,12 +1109,12 @@
           "y": 1
         }
       ],
-      "power": 10.0,
+      "power": 10,
       "width": 3,
       "category": "logistics",
       "input_slots": 2,
       "output_slots": 1,
-      "distribution_range": 15.0
+      "distribution_range": 15
     },
     {
       "height": 1,
@@ -1137,7 +1137,7 @@
           "y": 0
         }
       ],
-      "power": 0.0,
+      "power": 0,
       "width": 1,
       "category": "logistics",
       "input_slots": 0,
@@ -1149,7 +1149,7 @@
       "icon": "/images/facilities/item_port_power_sta_1.webp",
       "id": "power_thermal_bank_1",
       "name": "Thermal Bank",
-      "power": 0.0,
+      "power": 0,
       "width": 2,
       "category": "facilities",
       "input_slots": 2,
@@ -1161,36 +1161,36 @@
       "icon": "/images/facilities/item_port_power_pole_2.webp",
       "id": "power_electric_pylon_1",
       "name": "Electric Pylon",
-      "power": 0.0,
+      "power": 0,
       "width": 1,
       "category": "facilities",
       "input_slots": 0,
       "output_slots": 0,
-      "distribution_range": 30.0
+      "distribution_range": 30
     },
     {
       "height": 2,
       "icon": "/images/facilities/item_port_travel_pole_1.webp",
       "id": "power_relay_tower_1",
       "name": "Relay Tower",
-      "power": 0.0,
+      "power": 0,
       "width": 1,
       "category": "facilities",
       "input_slots": 0,
       "output_slots": 0,
-      "transmission_range": 80.0
+      "transmission_range": 80
     },
     {
       "height": 9,
       "icon": "/images/facilities/hub_pac_main.webp",
       "id": "hub_pac_main",
       "name": "Protocol Automation-Core",
-      "power": 0.0,
+      "power": 0,
       "width": 9,
       "category": "facilities",
       "input_slots": 0,
       "output_slots": 0,
-      "power_generation": 100.0,
+      "power_generation": 100,
       "tier": 1,
       "ports": [
         {
@@ -1340,7 +1340,7 @@
       "icon": "/images/facilities/logistics_depot_loader.webp",
       "id": "logistics_depot_loader",
       "name": "Depot Loader",
-      "power": 0.0,
+      "power": 0,
       "width": 3,
       "category": "logistics",
       "input_slots": 0,
@@ -1362,7 +1362,7 @@
       "icon": "/images/facilities/logistics_depot_unloader.webp",
       "id": "logistics_depot_unloader",
       "name": "Depot Unloader",
-      "power": 0.0,
+      "power": 0,
       "width": 3,
       "category": "logistics",
       "input_slots": 0,
@@ -1382,7 +1382,7 @@
   ],
   "items": [
     {
-      "icon": "/images/items/item_originium_ore.webp",
+      "icon": "/images/items/item_originium_ore.png",
       "id": "item_originium_ore",
       "is_raw": true,
       "name": "Originium Ore",
@@ -1394,7 +1394,7 @@
       }
     },
     {
-      "icon": "/images/items/item_quartz_sand.webp",
+      "icon": "/images/items/item_quartz_sand.png",
       "id": "item_quartz_sand",
       "is_raw": true,
       "name": "Amethyst Ore",
@@ -1402,7 +1402,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_iron_ore.webp",
+      "icon": "/images/items/item_iron_ore.png",
       "id": "item_iron_ore",
       "is_raw": true,
       "name": "Ferrium Ore",
@@ -1410,7 +1410,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_liquid_water.webp",
+      "icon": "/images/items/item_liquid_water.png",
       "id": "item_liquid_water",
       "is_raw": true,
       "name": "Clean Water",
@@ -1514,7 +1514,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_plant_sp_1.webp",
+      "icon": "/images/items/item_plant_sp_1.png",
       "id": "item_plant_sp_1",
       "is_raw": true,
       "name": "Reed Rye",
@@ -1522,7 +1522,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_plant_sp_2.webp",
+      "icon": "/images/items/item_plant_sp_2.png",
       "id": "item_plant_sp_2",
       "is_raw": true,
       "name": "Tartpepper",
@@ -1530,7 +1530,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_plant_sp_3.webp",
+      "icon": "/images/items/item_plant_sp_3.png",
       "id": "item_plant_sp_3",
       "is_raw": true,
       "name": "Redjade Ginseng",
@@ -1538,7 +1538,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_plant_sp_4.webp",
+      "icon": "/images/items/item_plant_sp_4.png",
       "id": "item_plant_sp_4",
       "is_raw": true,
       "name": "Amber Rice",
@@ -1578,7 +1578,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_plant_tundra_wood.webp",
+      "icon": "/images/items/item_plant_tundra_wood.png",
       "id": "item_plant_tundra_wood",
       "is_raw": true,
       "name": "Wood",
@@ -1770,7 +1770,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_glass_grass_1.webp",
+      "icon": "/images/items/item_fbottle_glass_grass_1.png",
       "id": "item_fbottle_glass_grass_1",
       "is_raw": false,
       "name": "Amethyst Bottle",
@@ -1778,7 +1778,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_glass_grass_2.webp",
+      "icon": "/images/items/item_fbottle_glass_grass_2.png",
       "id": "item_fbottle_glass_grass_2",
       "is_raw": false,
       "name": "Amethyst Bottle",
@@ -1786,7 +1786,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_glass_water.webp",
+      "icon": "/images/items/item_fbottle_glass_water.png",
       "id": "item_fbottle_glass_water",
       "is_raw": false,
       "name": "Amethyst Bottle",
@@ -1794,7 +1794,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_glass_xiranite.webp",
+      "icon": "/images/items/item_fbottle_glass_xiranite.png",
       "id": "item_fbottle_glass_xiranite",
       "is_raw": false,
       "name": "Amethyst Bottle",
@@ -1810,7 +1810,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_glassenr_grass_1.webp",
+      "icon": "/images/items/item_fbottle_glassenr_grass_1.png",
       "id": "item_fbottle_glassenr_grass_1",
       "is_raw": false,
       "name": "Cryston Bottle",
@@ -1818,7 +1818,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_glassenr_grass_2.webp",
+      "icon": "/images/items/item_fbottle_glassenr_grass_2.png",
       "id": "item_fbottle_glassenr_grass_2",
       "is_raw": false,
       "name": "Cryston Bottle",
@@ -1826,7 +1826,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_glassenr_water.webp",
+      "icon": "/images/items/item_fbottle_glassenr_water.png",
       "id": "item_fbottle_glassenr_water",
       "is_raw": false,
       "name": "Cryston Bottle",
@@ -1834,7 +1834,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_glassenr_xiranite.webp",
+      "icon": "/images/items/item_fbottle_glassenr_xiranite.png",
       "id": "item_fbottle_glassenr_xiranite",
       "is_raw": false,
       "name": "Cryston Bottle",
@@ -1850,7 +1850,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_iron_grass_1.webp",
+      "icon": "/images/items/item_fbottle_iron_grass_1.png",
       "id": "item_fbottle_iron_grass_1",
       "is_raw": false,
       "name": "Ferrium Bottle",
@@ -1858,7 +1858,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_iron_grass_2.webp",
+      "icon": "/images/items/item_fbottle_iron_grass_2.png",
       "id": "item_fbottle_iron_grass_2",
       "is_raw": false,
       "name": "Ferrium Bottle",
@@ -1866,7 +1866,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_iron_water.webp",
+      "icon": "/images/items/item_fbottle_iron_water.png",
       "id": "item_fbottle_iron_water",
       "is_raw": false,
       "name": "Ferrium Bottle",
@@ -1874,7 +1874,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_iron_xiranite.webp",
+      "icon": "/images/items/item_fbottle_iron_xiranite.png",
       "id": "item_fbottle_iron_xiranite",
       "is_raw": false,
       "name": "Ferrium Bottle",
@@ -1890,7 +1890,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_ironenr_grass_1.webp",
+      "icon": "/images/items/item_fbottle_ironenr_grass_1.png",
       "id": "item_fbottle_ironenr_grass_1",
       "is_raw": false,
       "name": "Steel Bottle",
@@ -1898,7 +1898,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_ironenr_grass_2.webp",
+      "icon": "/images/items/item_fbottle_ironenr_grass_2.png",
       "id": "item_fbottle_ironenr_grass_2",
       "is_raw": false,
       "name": "Steel Bottle",
@@ -1906,7 +1906,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_ironenr_water.webp",
+      "icon": "/images/items/item_fbottle_ironenr_water.png",
       "id": "item_fbottle_ironenr_water",
       "is_raw": false,
       "name": "Steel Bottle",
@@ -1914,7 +1914,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_fbottle_ironenr_xiranite.webp",
+      "icon": "/images/items/item_fbottle_ironenr_xiranite.png",
       "id": "item_fbottle_ironenr_xiranite",
       "is_raw": false,
       "name": "Steel Bottle",
@@ -2178,7 +2178,7 @@
       "state": "solid"
     },
     {
-      "icon": "/images/items/item_muck_feces_1.webp",
+      "icon": "/images/items/item_muck_feces_1.png",
       "id": "item_muck_feces_1",
       "is_raw": true,
       "name": "Burdo-Muck",

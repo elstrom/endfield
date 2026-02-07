@@ -140,27 +140,71 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
             // INTERACTION: Selectable
             facilityContainer.eventMode = 'static';
             facilityContainer.cursor = 'pointer';
-            facilityContainer.on('pointerdown', (e) => {
-                e.stopPropagation(); // Prevent panning/deselection
-                debugLog("[Viewport] Selected Facility:", pf.instanceId);
-                setSelectedFacilityId(pf.instanceId);
 
-                // NEW: Tell sandbox we are moving this one (ignore in collision)
-                if (window.setMovingFacilityId) window.setMovingFacilityId(pf.instanceId);
-
-                // Start Dragging Existing
+            // CLICK / TAP EVENT (< 1s Release)
+            facilityContainer.on('pointertap', (e) => {
+                // Only select if we did NOT just finish a drag
+                // and if the hold timer was cleared before firing.
+                // Note: PIXI pointertap fires on release.
                 const state = interactionState.current;
-                state.draggedExistingId = pf.instanceId;
-
-                // ARITHMETIC: Calculate Grid-Relative Offset
-                if (worldRef.current) {
-                    const worldPos = worldRef.current.toLocal(e.global);
-                    state.dragStartOffset = {
-                        x: Math.floor((worldPos.x - pf.x) / GRID_SIZE),
-                        y: Math.floor((worldPos.y - pf.y) / GRID_SIZE)
-                    };
+                if (!state.draggedExistingId) {
+                    debugLog("[Viewport] Tap Detected (Selection):", pf.instanceId);
+                    setSelectedFacilityId(pf.instanceId);
+                    // Ensure visual feedback immediately
+                    window.dispatchEvent(new CustomEvent('facility-selected', { detail: { id: pf.instanceId } }));
                 }
             });
+            facilityContainer.on('pointerdown', (e) => {
+                e.stopPropagation(); // Prevent panning/deselection
+
+                const state = interactionState.current;
+
+                // 1. Record Start Position for "Click vs Drag" threshold check (optional)
+                // For now, simple time-based.
+
+                // 2. Start Timer
+                debugLog("[Viewport] PointerDown on Facility:", pf.instanceId, "- Starting Hold Timer");
+
+                if (state.holdTimer) clearTimeout(state.holdTimer);
+
+                // Store event data needed for drag start
+                const worldPos = worldRef.current?.toLocal(e.global) || { x: 0, y: 0 };
+                const dragOffset = {
+                    x: Math.floor((worldPos.x - pf.x) / GRID_SIZE),
+                    y: Math.floor((worldPos.y - pf.y) / GRID_SIZE)
+                };
+
+                state.holdStartPos = { x: e.global.x, y: e.global.y };
+                state.isHolding = true;
+
+                // VISUAL: Feedback for holding
+                if (appRef.current?.canvas) appRef.current.canvas.style.cursor = "progress"; // Or 'wait'
+                facilityContainer.cursor = "progress";
+
+                // 1 Second Delay
+                state.holdTimer = setTimeout(() => {
+                    debugLog("[Viewport] Hold Duration Met! DRAG MODE ACTIVATED for:", pf.instanceId);
+
+                    // ACTIVATE DRAG
+                    state.draggedExistingId = pf.instanceId;
+                    state.dragStartOffset = dragOffset;
+                    state.isHolding = false; // Reset hold flag as we are now dragging
+
+                    // Tell App/Sandbox
+                    if (window.setMovingFacilityId) window.setMovingFacilityId(pf.instanceId);
+
+                    // Visual/Cursor feedback?
+                    if (appRef.current?.canvas) appRef.current.canvas.style.cursor = "grabbing";
+                    facilityContainer.cursor = "grabbing";
+
+                    // Select it too, why not?
+                    setSelectedFacilityId(pf.instanceId);
+                }, 1000); // 1000ms delay
+            });
+
+            // Note: pointerup handled globally or we can add it here to be safe for this specific object
+            // But global mouseup is better to catch releases outside.
+            // We'll handle the "Click" logic in global OnMouseUp if we detect we were holding but didn't drag.
 
             const gfx = new PIXI.Graphics();
             const color = meta.color ? parseInt(meta.color.replace('#', '0x')) : 0x555555;
@@ -236,7 +280,10 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
         placementRotation: 0,
         draggedExistingId: null as string | null, // NEW: dragging existing facility
         dragStartOffset: { x: 0, y: 0 }, // NEW: offset for smooth dragging
-        initialized: false
+        initialized: false,
+        holdTimer: null as any, // Timer for hold-to-drag
+        isHolding: false, // Visual state for hold
+        holdStartPos: { x: 0, y: 0 }
     });
 
     // --- PIXI SETUP ---
@@ -399,9 +446,8 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                 const currentDraggedId = draggedFacilityIdRef.current;
 
                 // Note: We need to access appData from prop/window safely if not in dependency
-                // But we can check window.appData as fallback or use a ref for appData if needed.
+                // But we can check window.appData as fallback or use a ref for it if needed.
                 // Since appData is a prop, we should ideally use a ref for it if we use it in ticker.
-                // However, the original code used window.appData or enclosure. 
                 // Let's rely on window.appData for now as it's synced.
                 if (currentDraggedId && window.appData?.facilities) {
                     const meta = window.appData.facilities.find((f: any) => f.id === currentDraggedId);
@@ -701,7 +747,43 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
         const onMouseUp = (e: MouseEvent) => {
             const draggedId = draggedFacilityIdRef.current;
             const state = interactionState.current;
-            debugLog("[ViewportInteraction] MouseUp", { draggedId, isDragging: state.isDragging, draggedExistingId: state.draggedExistingId });
+
+            // CLEAR HOLD TIMER
+            if (state.holdTimer) {
+                clearTimeout(state.holdTimer);
+                state.holdTimer = null;
+            }
+
+            // CHECK: Was this a CLICK on a facility?
+            // If we were "holding" (pointerdown happened) but `draggedExistingId` is NULL,
+            // it means the timer didn't fire. So it's a click.
+            // We need to know WHICH facility was clicked. 
+            // The hit testing is usually done by PIXI event. 
+            // BUT, the PIXI 'pointerdown' above didn't receive the 'pointerup'.
+            // Simple hack: We can check if we have a "pending" facility ID we stored in pointerdown?
+            // Or simpler: We rely on the fact that if we aren't dragging, we might have clicked.
+            // Wait, the PIXI 'click' or 'pointertap' event is better for clicks.
+            // But we are suppressing events?
+
+            // Let's refine: The `pointerdown` sets up the timer. 
+            // If we release here, and `state.draggedExistingId` is null, but we *recently* pressed down...
+            // Actually, we can't easily map the global mouseup to the specific facility unless we tracked "pendingId".
+            // Let's rely on PIXI `pointerup` on the container? No, global is safer for drags.
+
+            debugLog("[ViewportInteraction] MouseUp", { draggedId, isDragging: state.isDragging, draggedExistingId: state.draggedExistingId, isHolding: state.isHolding });
+
+            if (state.isHolding) {
+                // We were holding, but timer didn't fire (so < 1s).
+                // We should trigger SELECTION logic here if we can identify the target.
+                // However, we don't have the target ID here easily.
+                // ALTERNATIVE: Use `pointertap` on the facility for selection! 
+                // But `pointerdown` + `pointerup` = `pointertap`.
+                // If we consume `pointerdown`, `pointertap` might still fire.
+                // Let's try adding `pointertap` to the facility in `renderScene`.
+                state.isHolding = false;
+                // Reset cursor if we were holding but didn't drag
+                if (appRef.current?.canvas) appRef.current.canvas.style.cursor = "default";
+            }
 
             // 1. Handle Placement
             if (draggedId && appRef.current && worldRef.current && containerRef.current) {

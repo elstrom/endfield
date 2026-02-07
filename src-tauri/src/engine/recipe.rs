@@ -12,6 +12,7 @@ pub struct Recipe {
     pub name: Option<String>,
     pub inputs: Vec<RecipeIngredient>,
     pub outputs: Vec<RecipeIngredient>,
+    #[serde(rename = "time")]
     pub crafting_time: f32,
     pub facility_id: String,
 }
