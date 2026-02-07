@@ -4,8 +4,8 @@ Sistem penempatan belt otomatis yang memungkinkan pembangunan jalur logistik den
 
 ## Aturan Teknis Penempatan
 1. **Titik Awal (Start Point)**:
-   - Jalur belt hanya boleh mulai dibangun/ditekan pertama kali pada blok yang memiliki port bertipe **Input** (atau Output dari fasilitas sumber, sesuai arah aliran).
-   - *Logic*: Memastikan aliran barang searah sejak awal.
+   - Jalur belt hanya boleh mulai dibangun/ditekan pertama kali pada blok yang memiliki port bertipe **Output** (lubang keluar fasilitas sumber).
+   - *Logic*: Aliran barang keluar dari fasilitas menuju jalur distribusi.
 
 2. **Pencarian Jalur Otomatis (Dynamic Pathfinding)**:
    - Belt akan membuat jalur terpendek secara visual mengikuti posisi kursor (pointer).
@@ -21,7 +21,7 @@ Sistem penempatan belt otomatis yang memungkinkan pembangunan jalur logistik den
    - **Syarat 3.4: Manual Continuation**:
      - User dapat melakukan klik di sembarang koordinat grid yang kosong untuk menetapkan titik jangkar (anchor point) dan melanjutkan pembangunan jalur jika terputus.
    - **Syarat 3.5: Titik Akhir (End Point)**:
-     - Jika jalur ditarik mendekati fasilitas tujuan, ujung jalur hanya bisa dikaitkan ke lobang **Output** (atau Input fasilitas tujuan, sesuai logika aliran).
+     - Jika jalur ditarik mendekati fasilitas tujuan, ujung jalur hanya bisa dikaitkan ke lobang **Input** (lubang masuk fasilitas tujuan).
 
 ## Mekanisme Matematis
 - Menggunakan grid-based navigation.

@@ -15,7 +15,7 @@ export interface LogisticsEdge {
     toId: string;
 }
 
-export function useSandbox() {
+export function useSandbox(appData?: any) {
     const [placedFacilities, setPlacedFacilities] = useState<PlacedFacility[]>([]);
     const [edges, setEdges] = useState<LogisticsEdge[]>([]);
     // Occupany Map: Key="x,y", Value={ instanceId, port? }
@@ -131,7 +131,7 @@ export function useSandbox() {
             }
         });
         setOccupancyMap(newMap);
-    }, [placedFacilities]); // specific dependency on placedFacilities
+    }, [placedFacilities, appData]);
 
     const addEdge = useCallback((fromId: string, toId: string) => {
         if (fromId === toId) return;
@@ -187,6 +187,7 @@ export function useSandbox() {
     return {
         placedFacilities,
         edges,
+        occupancyMap,
         addFacility,
         updateFacility,
         setMovingFacilityId,

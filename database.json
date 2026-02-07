@@ -1197,141 +1197,141 @@
       "ports": [
         {
           "direction": "top",
-          "id": "out_t1",
-          "type": "output",
-          "x": 1,
-          "y": 0
-        },
-        {
-          "direction": "top",
-          "id": "out_t2",
-          "type": "output",
-          "x": 2,
-          "y": 0
-        },
-        {
-          "direction": "top",
-          "id": "out_t3",
-          "type": "output",
-          "x": 3,
-          "y": 0
-        },
-        {
-          "direction": "top",
-          "id": "out_t4",
-          "type": "output",
-          "x": 4,
-          "y": 0
-        },
-        {
-          "direction": "top",
-          "id": "out_t5",
-          "type": "output",
-          "x": 5,
-          "y": 0
-        },
-        {
-          "direction": "top",
-          "id": "out_t6",
-          "type": "output",
-          "x": 6,
-          "y": 0
-        },
-        {
-          "direction": "top",
-          "id": "out_t7",
-          "type": "output",
-          "x": 7,
-          "y": 0
-        },
-        {
-          "direction": "bottom",
-          "id": "out_b1",
-          "type": "output",
-          "x": 1,
-          "y": 8
-        },
-        {
-          "direction": "bottom",
-          "id": "out_b2",
-          "type": "output",
-          "x": 2,
-          "y": 8
-        },
-        {
-          "direction": "bottom",
-          "id": "out_b3",
-          "type": "output",
-          "x": 3,
-          "y": 8
-        },
-        {
-          "direction": "bottom",
-          "id": "out_b4",
-          "type": "output",
-          "x": 4,
-          "y": 8
-        },
-        {
-          "direction": "bottom",
-          "id": "out_b5",
-          "type": "output",
-          "x": 5,
-          "y": 8
-        },
-        {
-          "direction": "bottom",
-          "id": "out_b6",
-          "type": "output",
-          "x": 6,
-          "y": 8
-        },
-        {
-          "direction": "bottom",
-          "id": "out_b7",
-          "type": "output",
-          "x": 7,
-          "y": 8
-        },
-        {
-          "direction": "right",
-          "id": "in_l1",
+          "id": "in_t1",
           "type": "input",
+          "x": 1,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "in_t2",
+          "type": "input",
+          "x": 2,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "in_t3",
+          "type": "input",
+          "x": 3,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "in_t4",
+          "type": "input",
+          "x": 4,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "in_t5",
+          "type": "input",
+          "x": 5,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "in_t6",
+          "type": "input",
+          "x": 6,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "in_t7",
+          "type": "input",
+          "x": 7,
+          "y": 0
+        },
+        {
+          "direction": "bottom",
+          "id": "in_b1",
+          "type": "input",
+          "x": 1,
+          "y": 8
+        },
+        {
+          "direction": "bottom",
+          "id": "in_b2",
+          "type": "input",
+          "x": 2,
+          "y": 8
+        },
+        {
+          "direction": "bottom",
+          "id": "in_b3",
+          "type": "input",
+          "x": 3,
+          "y": 8
+        },
+        {
+          "direction": "bottom",
+          "id": "in_b4",
+          "type": "input",
+          "x": 4,
+          "y": 8
+        },
+        {
+          "direction": "bottom",
+          "id": "in_b5",
+          "type": "input",
+          "x": 5,
+          "y": 8
+        },
+        {
+          "direction": "bottom",
+          "id": "in_b6",
+          "type": "input",
+          "x": 6,
+          "y": 8
+        },
+        {
+          "direction": "bottom",
+          "id": "in_b7",
+          "type": "input",
+          "x": 7,
+          "y": 8
+        },
+        {
+          "direction": "left",
+          "id": "out_l1",
+          "type": "output",
           "x": 0,
           "y": 1
         },
         {
-          "direction": "right",
-          "id": "in_l2",
-          "type": "input",
+          "direction": "left",
+          "id": "out_l2",
+          "type": "output",
           "x": 0,
           "y": 4
         },
         {
-          "direction": "right",
-          "id": "in_l3",
-          "type": "input",
+          "direction": "left",
+          "id": "out_l3",
+          "type": "output",
           "x": 0,
           "y": 7
         },
         {
-          "direction": "left",
-          "id": "in_r1",
-          "type": "input",
+          "direction": "right",
+          "id": "out_r1",
+          "type": "output",
           "x": 8,
           "y": 1
         },
         {
-          "direction": "left",
-          "id": "in_r2",
-          "type": "input",
+          "direction": "right",
+          "id": "out_r2",
+          "type": "output",
           "x": 8,
           "y": 4
         },
         {
-          "direction": "left",
-          "id": "in_r3",
-          "type": "input",
+          "direction": "right",
+          "id": "out_r3",
+          "type": "output",
           "x": 8,
           "y": 7
         }

@@ -4,6 +4,7 @@ console.log("Viewport.tsx: HMR Refresh Triggered");
 import * as PIXI from "pixi.js";
 import { useSandbox } from "../hooks/useSandbox";
 import { debugLog } from "../utils/logger";
+import { Pathfinder } from "../utils/pathfinder";
 
 declare global {
     interface Window {
@@ -30,6 +31,28 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
     const draggedFacilityIdRef = useRef<string | null>(null);
     const mousePosRef = useRef<{ x: number, y: number }>({ x: 0, y: 0 });
 
+    const interactionState = useRef({
+        isDragging: false,
+        spacePressed: false,
+        lastMousePos: { x: 0, y: 0 },
+        targetZoom: 1.0,
+        currentZoom: 1.0,
+        targetPivot: { x: 0, y: 0 },
+        currentPivot: { x: 0, y: 0 },
+        targetRotation: 0,
+        currentRotation: 0,
+        keysPressed: {} as Record<string, boolean>,
+        placementRotation: 0,
+        draggedExistingId: null as string | null,
+        dragStartOffset: { x: 0, y: 0 },
+        isHolding: false,
+        holdTimer: null as any,
+        holdStartPos: { x: 0, y: 0 },
+        initialized: false,
+        pathStart: null as { x: number, y: number } | null,
+        pathPreview: [] as { x: number, y: number }[]
+    });
+
     useEffect(() => {
         debugLog("[ViewportInteraction] Mount");
         draggedFacilityIdRef.current = draggedFacilityId;
@@ -41,8 +64,25 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
         draggedFacilityIdRef.current = draggedFacilityId;
     }, [draggedFacilityId]);
 
-    const { placedFacilities, edges, addFacility, updateFacility, removeFacility, setMovingFacilityId, addEdge, isColliding } = useSandbox();
+    const { placedFacilities, edges, occupancyMap, addFacility, updateFacility, removeFacility, setMovingFacilityId, addEdge, isColliding } = useSandbox(appData);
     const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
+    const occupancyMapRef = useRef<Map<string, any>>(occupancyMap);
+    const placedFacilitiesRef = useRef<any[]>(placedFacilities);
+
+    useEffect(() => {
+        occupancyMapRef.current = occupancyMap;
+        placedFacilitiesRef.current = placedFacilities;
+    }, [occupancyMap, placedFacilities]);
+
+    // Pathfinding States
+    const [pathStart, setPathStart] = useState<{ x: number, y: number } | null>(null);
+    const [pathPreview, setPathPreview] = useState<{ x: number, y: number }[]>([]);
+    const pathfinderRef = useRef<Pathfinder | null>(null);
+
+    // Sync Pathfinder with Occupancy Map
+    useEffect(() => {
+        pathfinderRef.current = new Pathfinder(occupancyMap);
+    }, [occupancyMap]);
 
     const config = appData?.config;
     const GRID_SIZE = config?.grid_size || 64;
@@ -99,6 +139,14 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
             world.addChild(facilitiesLayer);
         }
 
+        let pathPreviewLayer = world.children.find(c => c.label === "path-preview") as PIXI.Container;
+        if (!pathPreviewLayer) {
+            pathPreviewLayer = new PIXI.Container();
+            pathPreviewLayer.label = "path-preview";
+            world.addChildAt(pathPreviewLayer, world.children.indexOf(facilitiesLayer)); // Under facilities
+        }
+        pathPreviewLayer.removeChildren();
+
         let topologyLayer = world.children.find(c => c.label === "topology") as PIXI.Graphics;
         if (!topologyLayer) {
             topologyLayer = new PIXI.Graphics();
@@ -108,6 +156,28 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
 
         facilitiesLayer.removeChildren();
         topologyLayer.clear();
+        pathPreviewLayer.removeChildren();
+
+        // DRAW PATH PREVIEW
+        if (pathPreview.length > 0) {
+            const beltMeta = window.appData?.facilities?.find((f: any) => f.id === window.config?.belt_id);
+            const color = beltMeta?.color ? parseInt(beltMeta.color.replace('#', '0x')) : 0x0078d7;
+
+            pathPreview.forEach((pos) => {
+                const gfx = new PIXI.Graphics();
+                gfx.beginFill(color, 0.3); // Semi-transparent
+                gfx.drawRect(0, 0, GRID_SIZE, GRID_SIZE);
+                gfx.endFill();
+
+                // Border for nodes
+                gfx.lineStyle(2, color, 0.5);
+                gfx.drawRect(0, 0, GRID_SIZE, GRID_SIZE);
+
+                gfx.x = pos.x * GRID_SIZE;
+                gfx.y = pos.y * GRID_SIZE;
+                pathPreviewLayer.addChild(gfx);
+            });
+        }
 
         const edgeColor = config.visuals?.colors?.topology_edge ? parseInt(config.visuals.colors.topology_edge.replace('#', '0x')) : 0x000000;
         const edgeAlpha = config.visuals?.opacity?.topology || 1;
@@ -142,22 +212,27 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
             facilityContainer.cursor = 'pointer';
 
             // CLICK / TAP EVENT (< 1s Release)
-            facilityContainer.on('pointertap', (e) => {
+            facilityContainer.on('pointertap', () => {
                 // Only select if we did NOT just finish a drag
                 // and if the hold timer was cleared before firing.
-                // Note: PIXI pointertap fires on release.
+                // ALSO: Do not select if we are currently dragging/placing a NEW facility
                 const state = interactionState.current;
-                if (!state.draggedExistingId) {
+                if (!state.draggedExistingId && !draggedFacilityIdRef.current) {
                     debugLog("[Viewport] Tap Detected (Selection):", pf.instanceId);
                     setSelectedFacilityId(pf.instanceId);
                     // Ensure visual feedback immediately
                     window.dispatchEvent(new CustomEvent('facility-selected', { detail: { id: pf.instanceId } }));
+                } else if (draggedFacilityIdRef.current) {
+                    debugLog("[Viewport] Tap Suppressed: Placement tool active (Ref check)");
                 }
             });
             facilityContainer.on('pointerdown', (e) => {
-                e.stopPropagation(); // Prevent panning/deselection
-
                 const state = interactionState.current;
+                if (draggedFacilityIdRef.current) {
+                    // If we are placing a NEW facility, do not start hold-to-drag timer for the existing one
+                    return;
+                }
+                e.stopPropagation(); // Prevent panning/deselection
 
                 // 1. Record Start Position for "Click vs Drag" threshold check (optional)
                 // For now, simple time-based.
@@ -263,28 +338,8 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
 
     useEffect(() => {
         renderScene();
-    }, [placedFacilities, edges, selectedFacilityId, config, GRID_SIZE]);
+    }, [placedFacilities, edges, selectedFacilityId, config, GRID_SIZE, draggedFacilityId, pathPreview, pathStart]);
 
-    // --- COMPONENT STATE REF ---
-    // Moving interaction state to refs to persist across re-renders without re-init
-    const interactionState = useRef({
-        targetPivot: { x: 0, y: 0 },
-        currentPivot: { x: 0, y: 0 },
-        targetZoom: 1,
-        currentZoom: 1,
-        targetRotation: 0,
-        currentRotation: 0,
-        isDragging: false,
-        spacePressed: false,
-        keysPressed: {} as Record<string, boolean>,
-        placementRotation: 0,
-        draggedExistingId: null as string | null, // NEW: dragging existing facility
-        dragStartOffset: { x: 0, y: 0 }, // NEW: offset for smooth dragging
-        initialized: false,
-        holdTimer: null as any, // Timer for hold-to-drag
-        isHolding: false, // Visual state for hold
-        holdStartPos: { x: 0, y: 0 }
-    });
 
     // --- PIXI SETUP ---
     const isReadyRef = useRef(false);
@@ -495,7 +550,32 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                         gfx.y = snapY;
                         previewLayer.addChild(gfx);
 
-                        // debugLog("[ViewportInteraction] Previewing placement at", snapX, snapY, "Rot:", rotation);
+                        // --- NEW: Pathfinding Preview in Ticker ---
+                        if (state.pathStart && meta.id === window.config?.belt_id) {
+                            if (pathfinderRef.current) {
+                                const mPos = mousePosRef.current;
+                                const worldPoint = world.toLocal({ x: mPos.x, y: mPos.y });
+                                const gx = Math.floor(worldPoint.x / GRID_SIZE);
+                                const gy = Math.floor(worldPoint.y / GRID_SIZE);
+
+                                const newPath = pathfinderRef.current.findPath(state.pathStart, { x: gx, y: gy });
+                                state.pathPreview = newPath.length > 0 ? newPath : [{ x: gx, y: gy }];
+
+                                // Draw Path
+                                const beltColor = meta.color ? parseInt(meta.color.replace('#', '0x')) : 0x0078d7;
+                                state.pathPreview.forEach((pos) => {
+                                    const pgfx = new PIXI.Graphics();
+                                    pgfx.beginFill(beltColor, 0.3);
+                                    pgfx.drawRect(0, 0, GRID_SIZE, GRID_SIZE);
+                                    pgfx.endFill();
+                                    pgfx.lineStyle(2, beltColor, 0.5);
+                                    pgfx.drawRect(0, 0, GRID_SIZE, GRID_SIZE);
+                                    pgfx.x = pos.x * GRID_SIZE;
+                                    pgfx.y = pos.y * GRID_SIZE;
+                                    previewLayer.addChild(pgfx);
+                                });
+                            }
+                        }
                     }
                 }
 
@@ -617,6 +697,15 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                 state.targetPivot = { x: (tilesX * GS) / 2, y: (tilesY * GS) / 2 };
                 state.targetZoom = 1.0;
                 state.targetRotation = 0;
+            }
+
+            if (e.code === "Escape") {
+                debugLog("[ViewportInteraction] Escape Pressed - Canceling Placement");
+                setPathStart(null);
+                setPathPreview([]);
+                if (onDropFinished) onDropFinished();
+                if (window.clearDragState) window.clearDragState();
+                return;
             }
 
             if (e.altKey) {
@@ -802,30 +891,102 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                     const snapY = Math.floor(worldPoint.y / GRID_SIZE) * GRID_SIZE;
                     const rot = state.placementRotation || 0;
 
-                    let meta = window.appData?.facilities?.find((f: any) => f.id === draggedId);
-                    if (meta) {
-                        const isRotated = rot % 180 === 90;
-                        const w = (isRotated ? meta.height : meta.width) * GRID_SIZE;
-                        const h = (isRotated ? meta.width : meta.height) * GRID_SIZE;
+                    if (draggedId === (window as any).config?.belt_id) {
+                        const GX = Math.floor(worldPoint.x / GRID_SIZE);
+                        const GY = Math.floor(worldPoint.y / GRID_SIZE);
+                        const key = `${GX},${GY}`;
+                        const occupant = occupancyMapRef.current.get(key);
 
-                        if (window.isColliding(snapX, snapY, w, h)) {
-                            debugLog("[ViewportInteraction] Collision detected. Placement blocked.");
-                            return; // Block placement
+                        if (!state.pathStart) {
+                            // Correct Logic: Belt starts from Output port (lobang keluar)
+                            if (!occupant || !occupant.port || occupant.port.type !== 'output') {
+                                debugLog(`[Pathfinding] Start blocked at [${GX},${GY}]. Must start at Output port. Occupant:`, occupant);
+                                return;
+                            }
+                            debugLog("[Pathfinding] Set Start Point (Output):", GX, GY, "Port:", occupant.port.id);
+                            state.pathStart = { x: GX, y: GY };
+                            setPathStart({ x: GX, y: GY });
+                            // Ticker will handle preview drawing
+                            return;
+                        } else {
+                            // Correct Logic: Belt ends at Input port (lobang masuk)
+                            if (!occupant || !occupant.port || occupant.port.type !== 'input') {
+                                debugLog(`[Pathfinding] Finalize blocked at [${GX},${GY}]. Must end at Input port. Occupant:`, occupant);
+                                return;
+                            }
+
+                            debugLog("[Pathfinding] Finalizing Path at:", GX, GY, "Nodes:", state.pathPreview.length);
+
+                            state.pathPreview.forEach((pos, i) => {
+                                const next = state.pathPreview[i + 1];
+                                const prev = state.pathPreview[i - 1];
+                                // ... rest of logic uses state.pathPreview ... 
+                                // (I will continue with ReplacementContent to make it consistent)
+
+                                let rotation = 0;
+                                const nodeToCompare = next || prev;
+                                if (nodeToCompare) {
+                                    const dx = nodeToCompare.x - pos.x;
+                                    const dy = nodeToCompare.y - pos.y;
+                                    const factor = next ? 1 : -1;
+                                    const vx = dx * factor;
+                                    const vy = dy * factor;
+                                    if (vx > 0) rotation = 0;
+                                    else if (vx < 0) rotation = 180;
+                                    else if (vy > 0) rotation = 90;
+                                    else if (vy < 0) rotation = 270;
+                                }
+
+                                const nodeKey = `${pos.x},${pos.y}`;
+                                const existing = occupancyMapRef.current.get(nodeKey);
+                                let isBridgeNeeded = false;
+                                if (existing && existing.instanceId) {
+                                    const existingPf = placedFacilitiesRef.current.find(f => f.instanceId === existing.instanceId);
+                                    const isExistingBelt = existingPf && existingPf.facilityId === (window as any).config?.belt_id;
+
+                                    if (isExistingBelt) {
+                                        const existingRot = (existingPf.rotation || 0) % 180;
+                                        const newRot = rotation % 180;
+                                        if (existingRot !== newRot) isBridgeNeeded = true;
+
+                                        // Only remove if it's a belt we are replacing
+                                        window.removeFacility(existing.instanceId);
+                                    }
+                                }
+                                const finalId = isBridgeNeeded ? "item_port_belt_bridge_1" : draggedId;
+                                (window as any).addFacility(finalId, pos.x * GRID_SIZE, pos.y * GRID_SIZE, rotation);
+                            });
+
+                            state.pathStart = null;
+                            state.pathPreview = [];
+                            setPathStart(null);
+                            setPathPreview([]);
+                            if (onDropFinished) onDropFinished();
+                            if (window.clearDragState) window.clearDragState();
+                            return;
                         }
+                    } else {
+                        // Standard Facility Placement
+                        let meta = window.appData?.facilities?.find((f: any) => f.id === draggedId);
+                        if (meta) {
+                            const isRotated = rot % 180 === 90;
+                            const w = (isRotated ? meta.height : meta.width) * GRID_SIZE;
+                            const h = (isRotated ? meta.width : meta.height) * GRID_SIZE;
 
-                        // Add with rotation
-                        (window as any).addFacility(draggedId, snapX, snapY, rot);
-                        debugLog("[ViewportInteraction] Dropping Facility:", draggedId, "at", snapX, snapY, "Rot:", rot);
-
-                        // IMPORTANT: Notify App to clear state AFTER we used the data
-                        if (onDropFinished) onDropFinished();
-                        if (window.clearDragState) window.clearDragState();
+                            if (!window.isColliding(snapX, snapY, w, h)) {
+                                debugLog("[ViewportInteraction] Placing Facility:", draggedId, "at", snapX, snapY);
+                                addFacility(draggedId, snapX, snapY, rot);
+                                if (onDropFinished) onDropFinished();
+                                if (window.clearDragState) window.clearDragState();
+                            } else {
+                                debugLog("[ViewportInteraction] Placement blocked (Collision)");
+                            }
+                        }
                     }
-                } else {
-                    debugLog("[Viewport] Dropped outside bounds.");
-                    if (onDropFinished) onDropFinished();
-                    if (window.clearDragState) window.clearDragState();
                 }
+            } else {
+                debugLog("[Viewport] Dropped outside bounds.");
+                if (onDropFinished) onDropFinished();
             }
 
             // 2. Handle Move Existing
@@ -952,6 +1113,11 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
 
             // Deselect if clicking on empty space (and not panning)
             if (!isValidPanClick && !state.draggedExistingId) {
+                if (pathStart) {
+                    debugLog("[Pathfinding] Cancelling Path Construction");
+                    setPathStart(null);
+                    setPathPreview([]);
+                }
                 setSelectedFacilityId(null);
                 if (window.setMovingFacilityId) window.setMovingFacilityId(null);
             }
