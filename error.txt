@@ -1,12 +1,12 @@
-[plugin:vite:react-babel] D:\Gawe\AI\endfield\src\components\Viewport.tsx: Unexpected token, expected "," (424:5)
-  427 |         debugLog("[ViewportInteraction] KeyUp:", e.code);
-D:/Gawe/AI/endfield/src/components/Viewport.tsx:424:5
-435 |      };
-436 |  
-437 |      const onMouseMove = (e: MouseEvent) => {
-    |           ^
-438 |          // 1. Update Mouse Pos Ref always
-439 |          if (containerRef.current) {
+[plugin:vite:react-babel] D:\Gawe\AI\endfield\src\components\Viewport.tsx: Unexpected token, expected "," (463:5)
+  466 |         debugLog("[ViewportInteraction] KeyUp:", e.code);
+D:/Gawe/AI/endfield/src/components/Viewport.tsx:463:5
+475 |  
+476 |      const onMouseMove = (e: MouseEvent) => {
+477 |          // 1. Update Mouse Pos Ref always
+    |     ^
+478 |          if (containerRef.current) {
+479 |              const rect = containerRef.current.getBoundingClientRect();
     at constructor (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:365:19)
     at TypeScriptParserMixin.raise (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:6599:19)
     at TypeScriptParserMixin.unexpected (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:6619:16)

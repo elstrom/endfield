@@ -1,4 +1,6 @@
 import { useRef, useEffect, useState } from "react";
+// FORCE HMR
+console.log("Viewport.tsx: HMR Refresh Triggered");
 import * as PIXI from "pixi.js";
 import { useSandbox } from "../hooks/useSandbox";
 import { debugLog } from "../utils/logger";
@@ -6,7 +8,9 @@ import { debugLog } from "../utils/logger";
 declare global {
     interface Window {
         selectedFacilityId: string | null;
-        addFacility: (id: string, x: number, y: number) => void;
+        addFacility: (id: string, x: number, y: number, rotation?: number) => void;
+        updateFacility: (id: string, updates: any) => void;
+        setMovingFacilityId: (id: string | null) => void;
         addEdge: (from: string, to: string) => void;
         isColliding: (x: number, y: number, w: number, h: number, data: any[]) => boolean;
         appData: any;
@@ -26,8 +30,8 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
 
     useEffect(() => { draggedFacilityIdRef.current = draggedFacilityId; }, [draggedFacilityId]);
 
-    const { placedFacilities, edges, addFacility, addEdge, isColliding } = useSandbox();
-    const [selectedFacilityId] = useState<string | null>(null);
+    const { placedFacilities, edges, addFacility, updateFacility, setMovingFacilityId, addEdge, isColliding } = useSandbox();
+    const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
 
     const config = appData?.config;
     const GRID_SIZE = config?.grid_size || 64;
@@ -46,12 +50,14 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
     useEffect(() => {
         window.selectedFacilityId = selectedFacilityId;
         window.addFacility = addFacility;
+        window.updateFacility = updateFacility;
+        window.setMovingFacilityId = setMovingFacilityId;
         window.addEdge = addEdge;
         window.isColliding = isColliding;
         window.appData = appData;
         window.placedFacilities = placedFacilities;
         window.config = config;
-    }, [selectedFacilityId, addFacility, addEdge, isColliding, appData, placedFacilities, config]);
+    }, [selectedFacilityId, addFacility, updateFacility, setMovingFacilityId, addEdge, isColliding, appData, placedFacilities, config]);
 
     // Compass Overlay State
     const [compassRotation, setCompassRotation] = useState(0);
@@ -116,6 +122,31 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
                 facilityContainer.x = pf.x;
                 facilityContainer.y = pf.y;
 
+                // INTERACTION: Selectable
+                facilityContainer.eventMode = 'static';
+                facilityContainer.cursor = 'pointer';
+                facilityContainer.on('pointerdown', (e) => {
+                    e.stopPropagation(); // Prevent panning/deselection
+                    debugLog("[Viewport] Selected Facility:", pf.instanceId);
+                    setSelectedFacilityId(pf.instanceId);
+
+                    // NEW: Tell sandbox we are moving this one (ignore in collision)
+                    if (window.setMovingFacilityId) window.setMovingFacilityId(pf.instanceId);
+
+                    // Start Dragging Existing
+                    const state = interactionState.current;
+                    state.draggedExistingId = pf.instanceId;
+
+                    // ARITHMETIC: Calculate Grid-Relative Offset
+                    if (worldRef.current) {
+                        const worldPos = worldRef.current.toLocal(e.global);
+                        state.dragStartOffset = {
+                            x: Math.floor((worldPos.x - pf.x) / GRID_SIZE),
+                            y: Math.floor((worldPos.y - pf.y) / GRID_SIZE)
+                        };
+                    }
+                });
+
                 const gfx = new PIXI.Graphics();
                 const color = meta.color ? parseInt(meta.color.replace('#', '0x')) : 0x555555;
                 const rot = (pf.rotation || 0) % 360;
@@ -147,9 +178,26 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
                         pGfx.endFill();
                         pGfx.x = px;
                         pGfx.y = py;
+                        pGfx.y = py;
                         facilityContainer.addChild(pGfx);
                     }
                 }
+
+                // Label
+                const label = new PIXI.Text({
+                    text: meta.name || meta.id,
+                    style: {
+                        fontFamily: 'Arial',
+                        fontSize: 10,
+                        fill: 0xffffff,
+                        align: 'center',
+                    }
+                });
+                label.anchor.set(0.5);
+                label.x = width / 2;
+                label.y = height / 2;
+                facilityContainer.addChild(label);
+
                 facilitiesLayer.addChild(facilityContainer);
             }
         };
@@ -168,7 +216,9 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
         isDragging: false,
         spacePressed: false,
         keysPressed: {} as Record<string, boolean>,
-        // Initialize flag to prevent resetting view on every render
+        placementRotation: 0,
+        draggedExistingId: null as string | null, // NEW: dragging existing facility
+        dragStartOffset: { x: 0, y: 0 }, // NEW: offset for smooth dragging
         initialized: false
     });
 
@@ -336,37 +386,98 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
                     const meta = window.appData.facilities.find((f: any) => f.id === currentDraggedId);
                     if (meta) {
                         const mPos = mousePosRef.current;
-                        // Local to World
                         const worldPoint = world.toLocal({ x: mPos.x, y: mPos.y });
                         const snapX = Math.floor(worldPoint.x / GRID_SIZE) * GRID_SIZE;
                         const snapY = Math.floor(worldPoint.y / GRID_SIZE) * GRID_SIZE;
 
-                        const gfx = new PIXI.Graphics();
-                        const width = (meta.width || 1) * GRID_SIZE;
-                        const height = (meta.height || 1) * GRID_SIZE;
+                        const rotation = interactionState.current.placementRotation || 0;
+                        const isRotated = rotation % 180 === 90;
+                        const width = (isRotated ? (meta.height || 1) : (meta.width || 1)) * GRID_SIZE;
+                        const height = (isRotated ? (meta.width || 1) : (meta.height || 1)) * GRID_SIZE;
 
-                        gfx.beginFill(0x0078d7, 0.3);
-                        gfx.lineStyle(2, 0x0078d7, 0.8);
+                        const gfx = new PIXI.Graphics();
+
+                        // Check Collision
+                        const colliding = window.isColliding(snapX, snapY, width, height, window.appData.facilities);
+
+                        // RED if colliding, BLUE if safe
+                        const color = colliding ? 0xff0000 : 0x0078d7;
+                        const opacity = colliding ? 0.6 : 0.3;
+
+                        gfx.beginFill(color, opacity);
+                        gfx.lineStyle(2, color, 0.8);
                         gfx.drawRect(0, 0, width, height);
                         gfx.endFill();
 
-                        if (meta.ports) {
-                            for (const port of meta.ports) {
-                                const px = port.x * GRID_SIZE + GRID_SIZE / 2;
-                                const py = port.y * GRID_SIZE + GRID_SIZE / 2;
-                                gfx.beginFill(port.type === 'input' ? 0x00FF00 : 0xFF0000);
-                                gfx.drawCircle(px, py, 6);
-                                gfx.endFill();
-                            }
-                        }
                         gfx.x = snapX;
                         gfx.y = snapY;
                         previewLayer.addChild(gfx);
 
-                        debugLog("[ViewportInteraction] Previewing placement at", snapX, snapY);
+                        debugLog("[ViewportInteraction] Previewing placement at", snapX, snapY, "Rot:", rotation);
                     }
                 }
-            });
+
+                // Mode 2: Moving Existing Facility
+                if (state.draggedExistingId && window.placedFacilities) {
+                    const pf = window.placedFacilities.find(f => f.instanceId === state.draggedExistingId);
+                    if (pf && window.appData?.facilities) {
+                        const meta = window.appData.facilities.find((f: any) => f.id === pf.facilityId);
+                        if (meta) {
+                            const mPos = mousePosRef.current;
+                            const worldPoint = world.toLocal({ x: mPos.x, y: mPos.y });
+
+                            // Adjust by drag start offset
+                            const mouseGridX = Math.floor(worldPoint.x / GRID_SIZE);
+                            const mouseGridY = Math.floor(worldPoint.y / GRID_SIZE);
+
+                            const snapX = (mouseGridX - state.dragStartOffset.x) * GRID_SIZE;
+                            const snapY = (mouseGridY - state.dragStartOffset.y) * GRID_SIZE;
+
+                            const isRotated = (pf.rotation || 0) % 180 === 90;
+                            const width = (isRotated ? meta.height : meta.width) * GRID_SIZE;
+                            const height = (isRotated ? meta.width : meta.height) * GRID_SIZE;
+
+                            const gfx = new PIXI.Graphics();
+                            // TODO: isColliding doesn't ignore self yet. 
+                            // But for MVP, colliding with self is "safe" if we assume logic handled elsewhere.
+                            // Actually isColliding checks `placedFacilities`. 
+                            // If we move slightly, we overlap with old self.
+                            // Let's keep it simple: Show Green/Blue if moving.
+
+                            const color = 0x00ff00;
+                            gfx.beginFill(color, 0.5);
+                            gfx.lineStyle(2, 0xffffff, 0.8);
+                            gfx.drawRect(0, 0, width, height);
+                            gfx.endFill();
+
+                            gfx.x = snapX;
+                            gfx.y = snapY;
+                            previewLayer.addChild(gfx);
+                        }
+                    }
+                }
+
+                // Mode 3: Passive Hover Highlight (Follow Pointer)
+                if (!state.draggedExistingId && !draggedFacilityIdRef.current) {
+                    const mPos = mousePosRef.current;
+                    const worldPoint = world.toLocal({ x: mPos.x, y: mPos.y });
+                    const gx = Math.floor(worldPoint.x / GRID_SIZE);
+                    const gy = Math.floor(worldPoint.y / GRID_SIZE);
+
+                    const hx = gx * GRID_SIZE;
+                    const hy = gy * GRID_SIZE;
+
+                    const highlight = new PIXI.Graphics();
+                    const accentColor = 0x0078d7; // Sky Blue Accent
+                    highlight.beginFill(accentColor, 0.15); // Subtle fill
+                    highlight.lineStyle(2, accentColor, 0.5); // Stronger borders
+                    highlight.drawRect(0, 0, GRID_SIZE, GRID_SIZE);
+                    highlight.endFill();
+                    highlight.x = hx;
+                    highlight.y = hy;
+                    previewLayer.addChild(highlight);
+                }
+            }); // Properly close the ticker callback
         };
 
         initPixi();
@@ -398,11 +509,7 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
             }
 
             if (e.code === "KeyH") {
-                // Reset Home (needs Map Dimensions... wait, we need map dimensions here.)
-                // We'll reset to 0,0 or preserve the logic if we access config.
-                // Since this effect has no deps, we can't easily access mapWidth/Height unless we calculate them again or store them in state.
-                // For now, reset to 0,0 or current target.
-                // Let's rely on config being available globally or via window since it's stable-ish.
+                // Reset Home
                 const tilesX = window.config?.world_size_tiles_x || 64;
                 const tilesY = window.config?.world_size_tiles_y || 40;
                 const GS = window.config?.grid_size || 64;
@@ -412,6 +519,7 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
             }
 
             if (e.altKey) {
+                // Camera Rotation
                 if (e.code === "KeyA") {
                     debugLog("[ViewportInteraction] Alt+A - Rotate Left");
                     state.targetRotation -= Math.PI / 2;
@@ -421,6 +529,56 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
                     state.targetRotation += Math.PI / 2;
                     window.dispatchEvent(new CustomEvent('viewport-update', { detail: { rotation: state.targetRotation } }));
                 }
+            } else {
+                // Facility Rotation
+                if (e.code === "KeyR") {
+                    if (state.draggedExistingId) return;
+
+                    if (window.selectedFacilityId) {
+                        const pf = window.placedFacilities?.find(f => f.instanceId === window.selectedFacilityId);
+                        const meta = window.appData?.facilities?.find((m: any) => m.id === pf?.facilityId);
+
+                        if (pf && meta) {
+                            const oldRot = pf.rotation || 0;
+                            const newRot = (oldRot + 90) % 360;
+
+                            // Arithmetic: Rotate around Center
+                            // 1. Get current bounding box
+                            const isOldRot = oldRot % 180 === 90;
+                            const wo = (isOldRot ? meta.height : meta.width) * GRID_SIZE;
+                            const ho = (isOldRot ? meta.width : meta.height) * GRID_SIZE;
+
+                            // 2. Get center
+                            const cx = pf.x + wo / 2;
+                            const cy = pf.y + ho / 2;
+
+                            // 3. Get new bounding box
+                            const isNewRot = newRot % 180 === 90;
+                            const wn = (isNewRot ? meta.height : meta.width) * GRID_SIZE;
+                            const hn = (isNewRot ? meta.width : meta.height) * GRID_SIZE;
+
+                            // 4. Calculate new top-left to keep center
+                            let nx = cx - wn / 2;
+                            let ny = cy - hn / 2;
+
+                            // 5. Grid Snap
+                            nx = Math.floor(nx / GRID_SIZE) * GRID_SIZE;
+                            ny = Math.floor(ny / GRID_SIZE) * GRID_SIZE;
+
+                            debugLog("[ViewportInteraction] Rotating Around Center:", { pfX: pf.x, pfY: pf.y, nx, ny });
+
+                            // Update both rotation AND position to maintain center
+                            (window as any).updateFacility(window.selectedFacilityId, {
+                                rotation: newRot,
+                                x: nx,
+                                y: ny
+                            });
+                        }
+                    } else {
+                        // Rotate Placement Preview
+                        state.placementRotation = (state.placementRotation + 90) % 360;
+                    }
+                }
             }
         };
 
@@ -428,6 +586,7 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
             debugLog("[ViewportInteraction] KeyUp:", e.code);
             const state = interactionState.current;
             state.keysPressed[e.code] = false;
+            // Clear space pressed even if key might be stuck logically
             if (e.code === "Space") {
                 state.spacePressed = false;
                 state.isDragging = false;
@@ -440,7 +599,21 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
             if (containerRef.current) {
                 const rect = containerRef.current.getBoundingClientRect();
                 mousePosRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-                // debugLog("[ViewportInteraction] MouseMove:", mousePosRef.current); // Too noisy? 
+
+                // DISPATCH: Grid Coordinate for Footer
+                if (worldRef.current) {
+                    const worldPoint = worldRef.current.toLocal({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+                    const gx = Math.floor(worldPoint.x / GRID_SIZE);
+                    const gy = Math.floor(worldPoint.y / GRID_SIZE);
+
+                    // Direct Window Update for zero-latency display
+                    if ((window as any).updateFooterCoord) {
+                        (window as any).updateFooterCoord(gx, gy);
+                    }
+
+                    // Also dispatch event for others
+                    window.dispatchEvent(new CustomEvent('mouse-grid-update', { detail: { x: gx, y: gy } }));
+                }
             }
 
             const state = interactionState.current;
@@ -458,7 +631,7 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
                 state.targetPivot.y += rdy;
                 state.currentPivot.x = state.targetPivot.x;
                 state.currentPivot.y = state.targetPivot.y;
-                debugLog("[ViewportInteraction] Dragging Viewport delta:", dx, dy);
+                // debugLog("[ViewportInteraction] Dragging Viewport delta:", dx, dy);
             }
         };
 
@@ -469,68 +642,154 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
 
             // 1. Handle Placement
             if (draggedId && appRef.current && worldRef.current && containerRef.current) {
-                debugLog("[Viewport] MouseUp Detected. DraggedId:", draggedId);
                 const rect = containerRef.current.getBoundingClientRect();
                 const clientX = e.clientX - rect.left;
                 const clientY = e.clientY - rect.top;
-                const GRID_SIZE = window.config?.grid_size || 64; // Use window config for access in handler
+                const GRID_SIZE = window.config?.grid_size || 64;
 
                 if (clientX >= 0 && clientX <= rect.width && clientY >= 0 && clientY <= rect.height) {
                     const worldPoint = worldRef.current.toLocal({ x: clientX, y: clientY });
+
+                    // Use grid offset for drop too? 
+                    // Actually placement from sidebar doesn't have offset, it centers mouse in box manually usually.
+                    // But here we rely on snapX/Y from ticker.
                     const snapX = Math.floor(worldPoint.x / GRID_SIZE) * GRID_SIZE;
                     const snapY = Math.floor(worldPoint.y / GRID_SIZE) * GRID_SIZE;
+                    const rot = state.placementRotation || 0;
 
-                    debugLog("[ViewportInteraction] Dropping Facility:", draggedId, "at", snapX, snapY);
-                    debugLog("[Viewport] Placing at:", snapX, snapY);
-                    window.addFacility(draggedId, snapX, snapY);
+                    let meta = window.appData?.facilities?.find((f: any) => f.id === draggedId);
+                    if (meta) {
+                        const isRotated = rot % 180 === 90;
+                        const w = (isRotated ? meta.height : meta.width) * GRID_SIZE;
+                        const h = (isRotated ? meta.width : meta.height) * GRID_SIZE;
+
+                        if (window.isColliding(snapX, snapY, w, h, window.appData.facilities)) {
+                            debugLog("[ViewportInteraction] Collision detected. Placement blocked.");
+                            return; // Block placement
+                        }
+
+                        // Add with rotation
+                        (window as any).addFacility(draggedId, snapX, snapY, rot);
+                        debugLog("[ViewportInteraction] Dropping Facility:", draggedId, "at", snapX, snapY, "Rot:", rot);
+                    }
                 } else {
                     debugLog("[Viewport] Dropped outside bounds.");
                 }
-            } else {
-                // debugLog("[Viewport] MouseUp ignored (No active drag or refs missing).");
             }
 
-            // 2. Stop Dragging Viewport
+            // 2. Handle Move Existing
+            if (state.draggedExistingId && appRef.current && worldRef.current && containerRef.current) {
+                const rect = containerRef.current.getBoundingClientRect();
+                const clientX = e.clientX - rect.left;
+                const clientY = e.clientY - rect.top;
+                const GRID_SIZE = window.config?.grid_size || 64;
+
+                const worldPoint = worldRef.current.toLocal({ x: clientX, y: clientY });
+                const mouseGridX = Math.floor(worldPoint.x / GRID_SIZE);
+                const mouseGridY = Math.floor(worldPoint.y / GRID_SIZE);
+                const snapX = (mouseGridX - state.dragStartOffset.x) * GRID_SIZE;
+                const snapY = (mouseGridY - state.dragStartOffset.y) * GRID_SIZE;
+
+                const pf = window.placedFacilities?.find(f => f.instanceId === state.draggedExistingId);
+                if (pf) {
+                    const meta = window.appData?.facilities?.find((f: any) => f.id === pf.facilityId);
+                    if (meta) {
+                        const isRotated = (pf.rotation || 0) % 180 === 90;
+                        const w = (isRotated ? meta.height : meta.width) * GRID_SIZE;
+                        const h = (isRotated ? meta.width : meta.height) * GRID_SIZE;
+
+                        // Simple collision check (ignoring self context for now)
+                        // If colliding, don't update pos.
+                        if (!window.isColliding(snapX, snapY, w, h, window.appData.facilities)) {
+                            (window as any).updateFacility(state.draggedExistingId, { x: snapX, y: snapY });
+                            debugLog("[ViewportInteraction] Moved Existing:", state.draggedExistingId, "to", snapX, snapY);
+                        } else {
+                            debugLog("[ViewportInteraction] Collision Blocked Move");
+                        }
+                    }
+                }
+                state.draggedExistingId = null;
+                if (window.setMovingFacilityId) window.setMovingFacilityId(null);
+            }
+
+            // 3. Stop Dragging Viewport
             state.isDragging = false;
             if (appRef.current?.canvas) {
                 appRef.current.canvas.style.cursor = state.spacePressed ? "grabbing" : "default";
             }
         };
 
-
-
-        // Attach global listeners
-        window.addEventListener("keydown", onKeyDown);
-        window.addEventListener("keyup", onKeyUp);
-        window.addEventListener("mousemove", onMouseMove);
-        window.addEventListener("mouseup", onMouseUp);
-
-        // For Wheel, we need to bind to the canvas element specifically (passive: false)
-        // But the canvas is created asynchronously in the OTHER effect.
-        // Solution: Add a MutationObserver or poll? 
-        // Simplest: Add wheel listener to containerRef which exists.
-        const container = containerRef.current;
         const onContainerWheel = (e: WheelEvent) => {
             e.preventDefault();
+            debugLog("InputEvent: Wheel", {
+                deltaY: e.deltaY,
+                deltaMode: e.deltaMode,
+                ctrl: e.ctrlKey,
+                shift: e.shiftKey,
+                meta: e.metaKey
+            });
+
             const state = interactionState.current;
-            debugLog("[ViewportInteraction] Wheel Event", { ctrl: e.ctrlKey, deltaY: e.deltaY, deltaX: e.deltaX });
-            if (e.ctrlKey) {
-                const zoomFactor = Math.exp(-e.deltaY * 0.001);
-                state.targetZoom = Math.min(Math.max(state.targetZoom * zoomFactor, 0.1), 5.0);
-            } else {
-                const dx = e.deltaX;
-                const dy = e.deltaY;
+
+            // 1. Normalize Wheel Delta
+            let delta = e.deltaY;
+            if (e.deltaMode === 1) delta *= 32;      // Line
+            else if (e.deltaMode === 2) delta *= 800; // Page
+
+            // Helper: Apply Pan
+            const applyPan = (dx: number, dy: number) => {
+                const s = state.targetZoom;
                 const cos = Math.cos(-state.targetRotation);
                 const sin = Math.sin(-state.targetRotation);
-                const s = state.targetZoom;
+
+                // Rotate screen delta to world delta
                 const rdx = (dx * cos - dy * sin) / s;
                 const rdy = (dx * sin + dy * cos) / s;
+
+                debugLog(`Applying Pan: dx=${dx} dy=${dy} -> rdx=${rdx} rdy=${rdy}`);
                 state.targetPivot.x += rdx;
                 state.targetPivot.y += rdy;
+            };
+
+            if (e.ctrlKey) {
+                // --- HORIZONTAL PAN (Ctrl + Scroll) ---
+                // Scroll Up/Down moves Left/Right
+                debugLog("Mode: Horizontal Pan (Ctrl)");
+                applyPan(delta, 0);
+            } else if (e.shiftKey) {
+                // --- VERTICAL PAN (Shift + Scroll) ---
+                debugLog("Mode: Vertical Pan (Shift)");
+                applyPan(0, delta);
+            } else {
+                // --- ZOOM (Default Scroll) ---
+                debugLog("Mode: Zoom (Default)");
+                const zoomIntensity = 0.0015;
+                const zoomFactor = Math.exp(-delta * zoomIntensity);
+                const newZoom = Math.min(Math.max(state.targetZoom * zoomFactor, 0.1), 5.0);
+
+                debugLog(`Zooming: Current=${state.targetZoom} New=${newZoom}`);
+
+                if (containerRef.current && worldRef.current) {
+                    const rect = containerRef.current.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+                    const worldPoint = worldRef.current.toLocal({ x: mouseX, y: mouseY });
+
+                    const sOld = state.targetZoom;
+                    const sNew = newZoom;
+                    const pOldX = state.targetPivot.x;
+                    const pOldY = state.targetPivot.y;
+
+                    const anchorX = worldPoint.x;
+                    const anchorY = worldPoint.y;
+
+                    state.targetPivot.x = anchorX - (anchorX - pOldX) * (sOld / sNew);
+                    state.targetPivot.y = anchorY - (anchorY - pOldY) * (sOld / sNew);
+                }
+                state.targetZoom = newZoom;
             }
         };
 
-        // Also Pan-Start (MouseDown) needs to be on container/canvas
         const onContainerMouseDown = (e: MouseEvent) => {
             const state = interactionState.current;
             const isValidPanClick = e.button === 1 || state.spacePressed;
@@ -539,8 +798,21 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
                 state.isDragging = true;
                 if (appRef.current?.canvas) appRef.current.canvas.style.cursor = "grabbing";
             }
+
+            // Deselect if clicking on empty space (and not panning)
+            if (!isValidPanClick && !state.draggedExistingId) {
+                setSelectedFacilityId(null);
+                if (window.setMovingFacilityId) window.setMovingFacilityId(null);
+            }
         };
 
+        // Attach global listeners
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("keyup", onKeyUp);
+        window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("mouseup", onMouseUp);
+
+        const container = containerRef.current;
         if (container) {
             container.addEventListener("wheel", onContainerWheel, { passive: false });
             container.addEventListener("mousedown", onContainerMouseDown);
@@ -556,7 +828,7 @@ export function Viewport({ appData, draggedFacilityId }: { appData: any, dragged
                 container.removeEventListener("mousedown", onContainerMouseDown);
             }
         };
-    }, []); // Run ONCE. Refs are stable.
+    }, [config]); // Re-run when config loads/changes so containerRef is ready
 
     if (!config) return <div className="w-full h-full flex items-center justify-center text-white/20 font-bold uppercase tracking-widest bg-[#1e1e1e]">Loading Canvas...</div>;
 

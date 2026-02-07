@@ -254,6 +254,7 @@ export default function App() {
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [isFacilitiesPanelOpen, setIsFacilitiesPanelOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [mouseGrid, setMouseGrid] = useState({ x: 0, y: 0 });
 
   const [dragState, setDragState] = useState<{ id: string | null, icon: string | null, x: number, y: number }>({ id: null, icon: null, x: 0, y: 0 });
 
@@ -296,11 +297,23 @@ export default function App() {
     const closeMenu = () => setActiveMenu(null);
     window.addEventListener("click", closeMenu);
 
+    const handleMouseGrid = (e: any) => {
+      const el = document.getElementById("footer-coord");
+      if (el) el.innerText = `${e.detail.x}, ${e.detail.y}`;
+    };
+    (window as any).updateFooterCoord = (x: number, y: number) => {
+      const el = document.getElementById("footer-coord");
+      if (el) el.innerText = `${x}, ${y}`;
+    };
+    window.addEventListener('mouse-grid-update', handleMouseGrid);
+
     return () => {
       clearInterval(interval);
       window.removeEventListener("click", closeMenu);
       window.removeEventListener("mousemove", handleGlobalMouseMove);
       window.removeEventListener("mouseup", handleGlobalMouseUp);
+      window.removeEventListener('mouse-grid-update', handleMouseGrid);
+      delete (window as any).updateFooterCoord;
     };
   }, [dragState.id]);
   // Dependency on dragState.id is important for the closure in handleGlobalMouseMove if we used state directly, 
@@ -601,10 +614,18 @@ export default function App() {
         </aside>
       </div>
 
-      <footer className="h-[2em] border-t flex items-center px-[1em] gap-[1.5em] text-[0.85em] opacity-60" style={{ backgroundColor: theme.panel_bg, borderColor: theme.border }}>
+      <footer className="h-[2em] border-t flex items-center px-[1em] gap-[1.5em] text-[0.85em] opacity-60 font-mono" style={{ backgroundColor: theme.panel_bg, borderColor: theme.border }}>
         <div className="flex items-center gap-[0.5em]"><span className="font-bold">100%</span></div>
         <div className="h-[1em] w-px bg-white/10" />
-        <div className="flex items-center gap-[1em]"><span>Doc: 1.2M / 4.5M</span><span>Coord: 1024, 768</span><span>Scale: 1:1</span></div>
+        <div className="flex items-center gap-[1.2em]">
+          <div className="flex items-center gap-1.5 font-bold text-sky-400">
+            <span className="opacity-40 text-[0.8em]">GRID:</span>
+            <span id="footer-coord">0, 0</span>
+          </div>
+          <div className="flex items-center gap-1 opacity-40">
+            <span>Scale: 1:1</span>
+          </div>
+        </div>
         <div className="flex-1" />
         <div className="flex items-center gap-[0.5em]"><Info style={{ width: '1em', height: '1em' }} /><span>System Ready</span></div>
       </footer>

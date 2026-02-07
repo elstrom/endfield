@@ -18,22 +18,26 @@ export interface LogisticsEdge {
 export function useSandbox() {
     const [placedFacilities, setPlacedFacilities] = useState<PlacedFacility[]>([]);
     const [edges, setEdges] = useState<LogisticsEdge[]>([]);
+    // Occupany Map: Key="x,y", Value=InstanceID
+    const [occupancyMap, setOccupancyMap] = useState<Map<string, string>>(new Map());
+    const [movingFacilityId, setMovingFacilityId] = useState<string | null>(null);
 
     // Sync to Rust Backend
     useEffect(() => {
+        const GRID_SIZE = window.config?.grid_size || 64;
         debugLog("[useSandbox] Syncing state to Rust. Count:", placedFacilities.length);
         invoke("update_simulation_state", {
             facilities: placedFacilities.map(f => ({
                 instance_id: f.instanceId,
                 facility_id: f.facilityId,
-                x: Math.floor(f.x / 32),
-                y: Math.floor(f.y / 32),
+                x: Math.floor(f.x / GRID_SIZE),
+                y: Math.floor(f.y / GRID_SIZE),
                 rotation: f.rotation
             })),
             edges: edges.map(e => ({
                 from_instance_id: e.fromId,
                 to_instance_id: e.toId,
-                item_id: "placeholder", // Will be dynamic later
+                item_id: "placeholder",
                 throughput: 1.0
             }))
         })
@@ -41,51 +45,71 @@ export function useSandbox() {
             .catch(err => debugLog("[useSandbox] Sync Failed (ERROR):", err));
     }, [placedFacilities, edges]);
 
-    const isColliding = useCallback((x: number, y: number, w: number, h: number, facilitiesData: any[]) => {
-        for (const pf of placedFacilities) {
-            const meta = facilitiesData.find(f => f.id === pf.facilityId);
-            if (!meta) continue;
+    const isColliding = useCallback((pixelX: number, pixelY: number, widthInPixels: number, heightInPixels: number, facilitiesData: any[]) => {
+        const GRID_SIZE = window.config?.grid_size || 64;
 
-            const existingX = pf.x;
-            const existingY = pf.y;
-            const existingW = meta.width * 32;
-            const existingH = meta.height * 32;
+        const startX = Math.floor(pixelX / GRID_SIZE);
+        const startY = Math.floor(pixelY / GRID_SIZE);
+        const w = Math.ceil(widthInPixels / GRID_SIZE);
+        const h = Math.ceil(heightInPixels / GRID_SIZE);
 
-            const newX = x;
-            const newY = y;
-            const newW = w * 32;
-            const newH = h * 32;
+        for (let ix = 0; ix < w; ix++) {
+            for (let iy = 0; iy < h; iy++) {
+                const key = `${startX + ix},${startY + iy}`;
+                const occupantId = occupancyMap.get(key);
 
-            if (newX < existingX + existingW &&
-                newX + newW > existingX &&
-                newY < existingY + existingH &&
-                newY + newH > existingY) {
-                return true;
+                // If cell is occupied AND it's not the one we are currently moving
+                if (occupantId && occupantId !== movingFacilityId) {
+                    // Reduce spam
+                    // debugLog(`[Collision] Blocked by ${occupantId} at grid ${key}`);
+                    return true;
+                }
             }
         }
         return false;
-    }, [placedFacilities]);
+    }, [occupancyMap, movingFacilityId]);
 
-    const addFacility = useCallback((facilityId: string, x: number, y: number) => {
-        debugLog("[useSandbox] addFacility called:", facilityId, x, y);
+    const addFacility = useCallback((facilityId: string, x: number, y: number, rotation: number = 0) => {
         const newFacility: PlacedFacility = {
             instanceId: Math.random().toString(36).substr(2, 9),
             facilityId,
             x,
             y,
-            rotation: 0,
+            rotation,
         };
-        setPlacedFacilities((prev) => {
-            debugLog("[useSandbox] Updating placedFacilities state. Prev count:", prev.length);
-            return [...prev, newFacility];
-        });
-        debugLog("[useSandbox] Facility added to state (queued):", newFacility.instanceId);
+        setPlacedFacilities((prev) => [...prev, newFacility]);
         return newFacility.instanceId;
     }, []);
 
+    // Rebuild Occupancy Map whenever placedFacilities change
+    useEffect(() => {
+        const GRID_SIZE = window.config?.grid_size || 64;
+        const newMap = new Map<string, string>();
+        const appData = (window as any).appData;
+
+        if (!appData?.facilities) return;
+
+        placedFacilities.forEach(pf => {
+            const meta = appData.facilities.find((f: any) => f.id === pf.facilityId);
+            if (!meta) return;
+
+            const startX = Math.floor(pf.x / GRID_SIZE);
+            const startY = Math.floor(pf.y / GRID_SIZE);
+            const isRotated = (pf.rotation || 0) % 180 === 90;
+            const w = isRotated ? (meta.height || 1) : (meta.width || 1);
+            const h = isRotated ? (meta.width || 1) : (meta.height || 1);
+
+            for (let x = 0; x < w; x++) {
+                for (let y = 0; y < h; y++) {
+                    newMap.set(`${startX + x},${startY + y}`, pf.instanceId);
+                }
+            }
+        });
+        setOccupancyMap(newMap);
+    }, [placedFacilities]); // specific dependency on placedFacilities
+
     const addEdge = useCallback((fromId: string, toId: string) => {
         if (fromId === toId) return;
-        // Avoid duplicate edges
         setEdges((prev) => {
             if (prev.find(e => e.fromId === fromId && e.toId === toId)) return prev;
             return [...prev, { fromId, toId }];
@@ -105,24 +129,36 @@ export function useSandbox() {
     const clearBoard = useCallback(() => {
         setPlacedFacilities([]);
         setEdges([]);
+        setOccupancyMap(new Map());
     }, []);
 
     const applyLayout = useCallback((layout: any[]) => {
+        const GRID_SIZE = window.config?.grid_size || 64;
         const newFacilities = layout.map(f => ({
             instanceId: Math.random().toString(36).substr(2, 9),
             facilityId: f.facility_id,
-            x: f.x * 32, // Convert grid cells to pixels
-            y: f.y * 32,
+            x: f.x * GRID_SIZE, // Convert grid cells to pixels
+            y: f.y * GRID_SIZE,
             rotation: f.rotation,
         }));
         setPlacedFacilities(newFacilities);
-        setEdges([]); // Clear edges for now as layout generator doesn't output edges yet
+        setEdges([]);
+        // content of occupiedCells will update via useEffect
+    }, []);
+
+    const updateFacility = useCallback((instanceId: string, updates: Partial<PlacedFacility>) => {
+        setPlacedFacilities(prev => {
+            const next = prev.map(f => f.instanceId === instanceId ? { ...f, ...updates } : f);
+            return next;
+        });
     }, []);
 
     return {
         placedFacilities,
         edges,
         addFacility,
+        updateFacility,
+        setMovingFacilityId,
         addEdge,
         isColliding,
         rotateFacility,
