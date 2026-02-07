@@ -45,7 +45,7 @@ export function useSandbox() {
             .catch(err => debugLog("[useSandbox] Sync Failed (ERROR):", err));
     }, [placedFacilities, edges]);
 
-    const isColliding = useCallback((pixelX: number, pixelY: number, widthInPixels: number, heightInPixels: number, facilitiesData: any[]) => {
+    const isColliding = useCallback((pixelX: number, pixelY: number, widthInPixels: number, heightInPixels: number) => {
         const GRID_SIZE = window.config?.grid_size || 64;
 
         const startX = Math.floor(pixelX / GRID_SIZE);
@@ -153,6 +153,12 @@ export function useSandbox() {
         });
     }, []);
 
+    const removeFacility = useCallback((instanceId: string) => {
+        setPlacedFacilities(prev => prev.filter(f => f.instanceId !== instanceId));
+        setEdges(prev => prev.filter(e => e.fromId !== instanceId && e.toId !== instanceId));
+        debugLog("[useSandbox] Removed Facility:", instanceId);
+    }, []);
+
     return {
         placedFacilities,
         edges,
@@ -163,6 +169,7 @@ export function useSandbox() {
         isColliding,
         rotateFacility,
         applyLayout,
-        clearBoard
+        clearBoard,
+        removeFacility
     };
 }

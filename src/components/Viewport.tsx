@@ -12,12 +12,13 @@ declare global {
         updateFacility: (id: string, updates: any) => void;
         setMovingFacilityId: (id: string | null) => void;
         addEdge: (from: string, to: string) => void;
-        isColliding: (x: number, y: number, w: number, h: number, data: any[]) => boolean;
+        isColliding: (x: number, y: number, w: number, h: number) => boolean;
         appData: any;
         placedFacilities: any[];
         config: any;
         viewportState?: any; // Debug access
         clearDragState: () => void;
+        removeFacility: (id: string) => void;
     }
 }
 
@@ -40,7 +41,7 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
         draggedFacilityIdRef.current = draggedFacilityId;
     }, [draggedFacilityId]);
 
-    const { placedFacilities, edges, addFacility, updateFacility, setMovingFacilityId, addEdge, isColliding } = useSandbox();
+    const { placedFacilities, edges, addFacility, updateFacility, removeFacility, setMovingFacilityId, addEdge, isColliding } = useSandbox();
     const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
 
     const config = appData?.config;
@@ -61,13 +62,14 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
         window.selectedFacilityId = selectedFacilityId;
         window.addFacility = addFacility;
         window.updateFacility = updateFacility;
+        window.removeFacility = removeFacility;
         window.setMovingFacilityId = setMovingFacilityId;
         window.addEdge = addEdge;
         window.isColliding = isColliding;
         window.appData = appData;
         window.placedFacilities = placedFacilities;
         window.config = config;
-    }, [selectedFacilityId, addFacility, updateFacility, setMovingFacilityId, addEdge, isColliding, appData, placedFacilities, config]);
+    }, [selectedFacilityId, addFacility, updateFacility, removeFacility, setMovingFacilityId, addEdge, isColliding, appData, placedFacilities, config]);
 
     // Compass Overlay State
     const [compassRotation, setCompassRotation] = useState(0);
@@ -417,16 +419,31 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                         const gfx = new PIXI.Graphics();
 
                         // Check Collision
-                        const colliding = window.isColliding(snapX, snapY, width, height, window.appData.facilities);
+                        const colliding = window.isColliding(snapX, snapY, width, height);
 
-                        // RED if colliding, BLUE if safe
-                        const color = colliding ? 0xff0000 : 0x0078d7;
-                        const opacity = colliding ? 0.6 : 0.3;
+                        // NEW: Show Ghosted Facility instead of solid color
+                        const baseColor = 0x555555; // Standard grey for facility
+                        const alpha = 0.4;
+                        const strokeColor = colliding ? 0xff0000 : 0xffffff;
 
-                        gfx.beginFill(color, opacity);
-                        gfx.lineStyle(2, color, 0.8);
+                        gfx.beginFill(baseColor, alpha);
+                        gfx.lineStyle(2, strokeColor, 0.6);
                         gfx.drawRect(0, 0, width, height);
                         gfx.endFill();
+
+                        // Draw Ports for Orientation Awareness
+                        if (meta.ports) {
+                            for (const port of meta.ports) {
+                                const pPos = getRotatedPortPosition(port, meta.width || 1, meta.height || 1, rotation);
+                                const px = pPos.x * GRID_SIZE + GRID_SIZE / 2;
+                                const py = pPos.y * GRID_SIZE + GRID_SIZE / 2;
+
+                                const pColor = port.type === 'input' ? 0x00ff00 : 0xff0000;
+                                gfx.beginFill(pColor, alpha + 0.2);
+                                gfx.drawCircle(px, py, 4);
+                                gfx.endFill();
+                            }
+                        }
 
                         gfx.x = snapX;
                         gfx.y = snapY;
@@ -457,17 +474,36 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                             const height = (isRotated ? meta.width : meta.height) * GRID_SIZE;
 
                             const gfx = new PIXI.Graphics();
-                            // TODO: isColliding doesn't ignore self yet. 
-                            // But for MVP, colliding with self is "safe" if we assume logic handled elsewhere.
-                            // Actually isColliding checks `placedFacilities`. 
-                            // If we move slightly, we overlap with old self.
-                            // Let's keep it simple: Show Green/Blue if moving.
 
-                            const color = 0x00ff00;
-                            gfx.beginFill(color, 0.5);
-                            gfx.lineStyle(2, 0xffffff, 0.8);
+                            // NEW: Use Ghosted look for moving existing as well
+                            const baseColor = 0x555555;
+                            const alpha = 0.4;
+
+                            // Check collision (simple)
+                            const isRotCurrent = (pf.rotation || 0) % 180 === 90;
+                            const curW = (isRotCurrent ? meta.height : meta.width) * GRID_SIZE;
+                            const curH = (isRotCurrent ? meta.width : meta.height) * GRID_SIZE;
+                            const isColliding = window.isColliding(snapX, snapY, curW, curH);
+                            const strokeColor = isColliding ? 0xff0000 : 0xffffff;
+
+                            gfx.beginFill(baseColor, alpha);
+                            gfx.lineStyle(2, strokeColor, 0.6);
                             gfx.drawRect(0, 0, width, height);
                             gfx.endFill();
+
+                            // Ports
+                            if (meta.ports) {
+                                for (const port of meta.ports) {
+                                    const pPos = getRotatedPortPosition(port, meta.width, meta.height, pf.rotation || 0);
+                                    const px = pPos.x * GRID_SIZE + GRID_SIZE / 2;
+                                    const py = pPos.y * GRID_SIZE + GRID_SIZE / 2;
+
+                                    const pColor = port.type === 'input' ? 0x00ff00 : 0xff0000;
+                                    gfx.beginFill(pColor, alpha + 0.2);
+                                    gfx.drawCircle(px, py, 4);
+                                    gfx.endFill();
+                                }
+                            }
 
                             gfx.x = snapX;
                             gfx.y = snapY;
@@ -597,6 +633,15 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                         }
                     }
                 }
+
+                // NEW: Delete Facility
+                if (e.code === "Delete" || e.code === "Backspace") {
+                    if (window.selectedFacilityId) {
+                        debugLog("[ViewportInteraction] Deleting Selected Facility:", window.selectedFacilityId);
+                        removeFacility(window.selectedFacilityId);
+                        setSelectedFacilityId(null);
+                    }
+                }
             }
         };
 
@@ -681,7 +726,7 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                         const w = (isRotated ? meta.height : meta.width) * GRID_SIZE;
                         const h = (isRotated ? meta.width : meta.height) * GRID_SIZE;
 
-                        if (window.isColliding(snapX, snapY, w, h, window.appData.facilities)) {
+                        if (window.isColliding(snapX, snapY, w, h)) {
                             debugLog("[ViewportInteraction] Collision detected. Placement blocked.");
                             return; // Block placement
                         }
@@ -724,7 +769,7 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
 
                         // Simple collision check (ignoring self context for now)
                         // If colliding, don't update pos.
-                        if (!window.isColliding(snapX, snapY, w, h, window.appData.facilities)) {
+                        if (!window.isColliding(snapX, snapY, w, h)) {
                             (window as any).updateFacility(state.draggedExistingId, { x: snapX, y: snapY });
                             debugLog("[ViewportInteraction] Moved Existing:", state.draggedExistingId, "to", snapX, snapY);
                         } else {
