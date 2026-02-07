@@ -32,7 +32,13 @@
     },
     "world_size_tiles_x": 64,
     "world_size_tiles_y": 40,
-    "zoom_level": 1
+    "zoom_level": 1,
+    "logistics_flow_rate_units_per_s": 0.5,
+    "relay_transmission_range_m": 80.0,
+    "electric_pylon_distribution_range_m": 30.0,
+    "thermal_bank_generation_mw": 220.0,
+    "thermal_bank_fuel_duration_s": 40.0,
+    "slot_capacity": 50
   },
   "facilities": [
     {
@@ -85,7 +91,10 @@
         }
       ],
       "power": 20.0,
-      "width": 3
+      "width": 3,
+      "category": "facilities",
+      "input_slots": 2,
+      "output_slots": 1
     },
     {
       "height": 3,
@@ -109,7 +118,10 @@
         }
       ],
       "power": 5.0,
-      "width": 3
+      "width": 3,
+      "category": "facilities",
+      "input_slots": 2,
+      "output_slots": 1
     },
     {
       "height": 6,
@@ -203,7 +215,10 @@
         }
       ],
       "power": 20.0,
-      "width": 4
+      "width": 4,
+      "category": "facilities",
+      "input_slots": 2,
+      "output_slots": 1
     },
     {
       "height": 3,
@@ -255,7 +270,10 @@
         }
       ],
       "power": 5.0,
-      "width": 3
+      "width": 3,
+      "category": "facilities",
+      "input_slots": 2,
+      "output_slots": 1
     },
     {
       "height": 3,
@@ -279,7 +297,10 @@
         }
       ],
       "power": 5.0,
-      "width": 3
+      "width": 3,
+      "category": "facilities",
+      "input_slots": 2,
+      "output_slots": 1
     },
     {
       "height": 3,
@@ -331,7 +352,10 @@
         }
       ],
       "power": 5.0,
-      "width": 3
+      "width": 3,
+      "category": "facilities",
+      "input_slots": 2,
+      "output_slots": 1
     },
     {
       "height": 3,
@@ -383,7 +407,10 @@
         }
       ],
       "power": 5.0,
-      "width": 3
+      "width": 3,
+      "category": "facilities",
+      "input_slots": 2,
+      "output_slots": 1
     },
     {
       "height": 3,
@@ -435,7 +462,10 @@
         }
       ],
       "power": 5.0,
-      "width": 3
+      "width": 3,
+      "category": "facilities",
+      "input_slots": 2,
+      "output_slots": 1
     },
     {
       "height": 3,
@@ -487,7 +517,10 @@
         }
       ],
       "power": 10.0,
-      "width": 3
+      "width": 3,
+      "category": "facilities",
+      "input_slots": 2,
+      "output_slots": 1
     },
     {
       "height": 3,
@@ -511,7 +544,10 @@
         }
       ],
       "power": 5.0,
-      "width": 3
+      "width": 3,
+      "category": "facilities",
+      "input_slots": 2,
+      "output_slots": 1
     },
     {
       "height": 3,
@@ -563,7 +599,10 @@
         }
       ],
       "power": 20.0,
-      "width": 3
+      "width": 3,
+      "category": "facilities",
+      "input_slots": 2,
+      "output_slots": 1
     },
     {
       "height": 4,
@@ -657,7 +696,10 @@
         }
       ],
       "power": 10.0,
-      "width": 6
+      "width": 6,
+      "category": "facilities",
+      "input_slots": 2,
+      "output_slots": 1
     },
     {
       "height": 3,
@@ -709,7 +751,633 @@
         }
       ],
       "power": 5.0,
-      "width": 3
+      "width": 3,
+      "category": "facilities",
+      "input_slots": 2,
+      "output_slots": 1
+    },
+    {
+      "height": 1,
+      "icon": "/images/facilities/item_log_conditioner.webp",
+      "id": "item_port_control_port_1",
+      "name": "Item Control Port",
+      "ports": [
+        {
+          "direction": "left",
+          "id": "in_1",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "right",
+          "id": "out_1",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "power": 0.0,
+      "width": 1,
+      "category": "logistics",
+      "input_slots": 0,
+      "output_slots": 0,
+      "is_filter": true,
+      "tier": 2
+    },
+    {
+      "height": 1,
+      "icon": "/images/facilities/item_log_splitter.webp",
+      "id": "item_port_splitter_1",
+      "name": "Splitter",
+      "ports": [
+        {
+          "direction": "left",
+          "id": "in_1",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "right",
+          "id": "out_1",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "out_2",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "bottom",
+          "id": "out_3",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "power": 0.0,
+      "width": 1,
+      "category": "logistics",
+      "input_slots": 0,
+      "output_slots": 0,
+      "tier": 2
+    },
+    {
+      "height": 1,
+      "icon": "/images/facilities/item_log_connector.webp",
+      "id": "item_port_belt_bridge_1",
+      "name": "Belt Bridge",
+      "ports": [
+        {
+          "direction": "left",
+          "id": "in_1",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "right",
+          "id": "out_1",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "bottom",
+          "id": "in_2",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "out_2",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "power": 0.0,
+      "width": 1,
+      "category": "logistics",
+      "input_slots": 0,
+      "output_slots": 0,
+      "tier": 2
+    },
+    {
+      "height": 1,
+      "icon": "/images/facilities/item_log_converger.webp",
+      "id": "item_port_converger_1",
+      "name": "Converger",
+      "ports": [
+        {
+          "direction": "left",
+          "id": "in_1",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "bottom",
+          "id": "in_2",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "in_3",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "right",
+          "id": "out_1",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "power": 0.0,
+      "width": 1,
+      "category": "logistics",
+      "input_slots": 0,
+      "output_slots": 0,
+      "tier": 3
+    },
+    {
+      "height": 1,
+      "icon": "/images/facilities/item_log_pipe_conditioner.webp",
+      "id": "item_port_pipe_control_port_1",
+      "name": "Pipe Control Port",
+      "ports": [
+        {
+          "direction": "left",
+          "id": "in_1",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "right",
+          "id": "out_1",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "power": 0.0,
+      "width": 1,
+      "category": "logistics",
+      "input_slots": 0,
+      "output_slots": 0,
+      "is_filter": true,
+      "tier": 2
+    },
+    {
+      "height": 1,
+      "icon": "/images/facilities/item_log_pipe_splitter.webp",
+      "id": "item_port_pipe_splitter_1",
+      "name": "Pipe Splitter",
+      "ports": [
+        {
+          "direction": "left",
+          "id": "in_1",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "right",
+          "id": "out_1",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "out_2",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "bottom",
+          "id": "out_3",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "power": 0.0,
+      "width": 1,
+      "category": "logistics",
+      "input_slots": 0,
+      "output_slots": 0,
+      "tier": 2
+    },
+    {
+      "height": 1,
+      "icon": "/images/facilities/item_log_pipe_connector.webp",
+      "id": "item_port_pipe_bridge_1",
+      "name": "Pipe Bridge",
+      "ports": [
+        {
+          "direction": "left",
+          "id": "in_1",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "right",
+          "id": "out_1",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "bottom",
+          "id": "in_2",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "out_2",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "power": 0.0,
+      "width": 1,
+      "category": "logistics",
+      "input_slots": 0,
+      "output_slots": 0,
+      "tier": 2
+    },
+    {
+      "height": 1,
+      "icon": "/images/facilities/item_log_pipe_converger.webp",
+      "id": "item_port_pipe_converger_1",
+      "name": "Pipe Converger",
+      "ports": [
+        {
+          "direction": "left",
+          "id": "in_1",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "bottom",
+          "id": "in_2",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "in_3",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "right",
+          "id": "out_1",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "power": 0.0,
+      "width": 1,
+      "category": "logistics",
+      "input_slots": 0,
+      "output_slots": 0,
+      "tier": 3
+    },
+    {
+      "height": 3,
+      "icon": "/images/facilities/item_port_liquid_storager_1.webp",
+      "id": "item_port_fluid_tank_1",
+      "name": "Fluid Tank",
+      "ports": [
+        {
+          "direction": "left",
+          "id": "in_1",
+          "type": "input",
+          "x": 2,
+          "y": 1
+        },
+        {
+          "direction": "left",
+          "id": "out_1",
+          "type": "output",
+          "x": 0,
+          "y": 1
+        }
+      ],
+      "power": 0.0,
+      "width": 3,
+      "category": "logistics",
+      "input_slots": 2,
+      "output_slots": 1,
+      "capacity": 1000.0,
+      "tier": 1
+    },
+    {
+      "height": 3,
+      "icon": "/images/facilities/item_port_squirter_1.webp",
+      "id": "item_port_sprinkler_1",
+      "name": "Sprinkler",
+      "ports": [
+        {
+          "direction": "left",
+          "id": "in_1",
+          "type": "input",
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "power": 10.0,
+      "width": 3,
+      "category": "logistics",
+      "input_slots": 2,
+      "output_slots": 1,
+      "distribution_range": 15.0
+    },
+    {
+      "height": 1,
+      "icon": "/images/facilities/item_log_belt_01.webp",
+      "id": "item_port_log_belt_01",
+      "name": "Transport Belt",
+      "ports": [
+        {
+          "direction": "left",
+          "id": "in_1",
+          "type": "input",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "direction": "right",
+          "id": "out_1",
+          "type": "output",
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "power": 0.0,
+      "width": 1,
+      "category": "logistics",
+      "input_slots": 0,
+      "output_slots": 0,
+      "throughput_limit": 0.5
+    },
+    {
+      "height": 2,
+      "icon": "/images/facilities/item_port_power_sta_1.webp",
+      "id": "power_thermal_bank_1",
+      "name": "Thermal Bank",
+      "power": 0.0,
+      "width": 2,
+      "category": "facilities",
+      "input_slots": 2,
+      "output_slots": 1,
+      "tier": 2
+    },
+    {
+      "height": 1,
+      "icon": "/images/facilities/item_port_power_pole_2.webp",
+      "id": "power_electric_pylon_1",
+      "name": "Electric Pylon",
+      "power": 0.0,
+      "width": 1,
+      "category": "facilities",
+      "input_slots": 0,
+      "output_slots": 0,
+      "distribution_range": 30.0
+    },
+    {
+      "height": 2,
+      "icon": "/images/facilities/item_port_travel_pole_1.webp",
+      "id": "power_relay_tower_1",
+      "name": "Relay Tower",
+      "power": 0.0,
+      "width": 1,
+      "category": "facilities",
+      "input_slots": 0,
+      "output_slots": 0,
+      "transmission_range": 80.0
+    },
+    {
+      "height": 9,
+      "icon": "/images/facilities/hub_pac_main.webp",
+      "id": "hub_pac_main",
+      "name": "Protocol Automation-Core",
+      "power": 0.0,
+      "width": 9,
+      "category": "facilities",
+      "input_slots": 0,
+      "output_slots": 0,
+      "power_generation": 100.0,
+      "tier": 1,
+      "ports": [
+        {
+          "direction": "top",
+          "id": "out_t1",
+          "type": "output",
+          "x": 1,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "out_t2",
+          "type": "output",
+          "x": 2,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "out_t3",
+          "type": "output",
+          "x": 3,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "out_t4",
+          "type": "output",
+          "x": 4,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "out_t5",
+          "type": "output",
+          "x": 5,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "out_t6",
+          "type": "output",
+          "x": 6,
+          "y": 0
+        },
+        {
+          "direction": "top",
+          "id": "out_t7",
+          "type": "output",
+          "x": 7,
+          "y": 0
+        },
+        {
+          "direction": "bottom",
+          "id": "out_b1",
+          "type": "output",
+          "x": 1,
+          "y": 8
+        },
+        {
+          "direction": "bottom",
+          "id": "out_b2",
+          "type": "output",
+          "x": 2,
+          "y": 8
+        },
+        {
+          "direction": "bottom",
+          "id": "out_b3",
+          "type": "output",
+          "x": 3,
+          "y": 8
+        },
+        {
+          "direction": "bottom",
+          "id": "out_b4",
+          "type": "output",
+          "x": 4,
+          "y": 8
+        },
+        {
+          "direction": "bottom",
+          "id": "out_b5",
+          "type": "output",
+          "x": 5,
+          "y": 8
+        },
+        {
+          "direction": "bottom",
+          "id": "out_b6",
+          "type": "output",
+          "x": 6,
+          "y": 8
+        },
+        {
+          "direction": "bottom",
+          "id": "out_b7",
+          "type": "output",
+          "x": 7,
+          "y": 8
+        },
+        {
+          "direction": "right",
+          "id": "in_l1",
+          "type": "input",
+          "x": 0,
+          "y": 1
+        },
+        {
+          "direction": "right",
+          "id": "in_l2",
+          "type": "input",
+          "x": 0,
+          "y": 4
+        },
+        {
+          "direction": "right",
+          "id": "in_l3",
+          "type": "input",
+          "x": 0,
+          "y": 7
+        },
+        {
+          "direction": "left",
+          "id": "in_r1",
+          "type": "input",
+          "x": 8,
+          "y": 1
+        },
+        {
+          "direction": "left",
+          "id": "in_r2",
+          "type": "input",
+          "x": 8,
+          "y": 4
+        },
+        {
+          "direction": "left",
+          "id": "in_r3",
+          "type": "input",
+          "x": 8,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "height": 1,
+      "icon": "/images/facilities/logistics_depot_loader.webp",
+      "id": "logistics_depot_loader",
+      "name": "Depot Loader",
+      "power": 0.0,
+      "width": 3,
+      "category": "logistics",
+      "input_slots": 0,
+      "output_slots": 0,
+      "tier": 2,
+      "placement_restriction": "depot_bus",
+      "ports": [
+        {
+          "direction": "bottom",
+          "id": "in_1",
+          "type": "input",
+          "x": 1,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "height": 1,
+      "icon": "/images/facilities/logistics_depot_unloader.webp",
+      "id": "logistics_depot_unloader",
+      "name": "Depot Unloader",
+      "power": 0.0,
+      "width": 3,
+      "category": "logistics",
+      "input_slots": 0,
+      "output_slots": 0,
+      "tier": 2,
+      "placement_restriction": "depot_bus",
+      "ports": [
+        {
+          "direction": "bottom",
+          "id": "out_1",
+          "type": "output",
+          "x": 1,
+          "y": 0
+        }
+      ]
     }
   ],
   "items": [
@@ -718,679 +1386,796 @@
       "id": "item_originium_ore",
       "is_raw": true,
       "name": "Originium Ore",
-      "tier": 1
+      "tier": 1,
+      "state": "solid",
+      "fuel_val": {
+        "power": 50,
+        "duration": 8
+      }
     },
     {
       "icon": "/images/items/item_quartz_sand.webp",
       "id": "item_quartz_sand",
       "is_raw": true,
       "name": "Amethyst Ore",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_iron_ore.webp",
       "id": "item_iron_ore",
       "is_raw": true,
       "name": "Ferrium Ore",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_liquid_water.webp",
       "id": "item_liquid_water",
       "is_raw": true,
       "name": "Clean Water",
-      "tier": 1
+      "tier": 1,
+      "state": "fluid"
     },
     {
       "icon": "/images/items/item_plant_moss_1.webp",
       "id": "item_plant_moss_1",
       "is_raw": true,
       "name": "Buckflower",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_moss_seed_1.webp",
       "id": "item_plant_moss_seed_1",
       "is_raw": true,
       "name": "Buckflower Seed",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_moss_2.webp",
       "id": "item_plant_moss_2",
       "is_raw": true,
       "name": "Citrome",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_moss_seed_2.webp",
       "id": "item_plant_moss_seed_2",
       "is_raw": true,
       "name": "Citrome Seed",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_moss_3.webp",
       "id": "item_plant_moss_3",
       "is_raw": true,
       "name": "Sandleaf",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_moss_seed_3.webp",
       "id": "item_plant_moss_seed_3",
       "is_raw": true,
       "name": "Sandleaf Seed",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_bbflower_1.webp",
       "id": "item_plant_bbflower_1",
       "is_raw": true,
       "name": "Aketine",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_bbflower_seed_1.webp",
       "id": "item_plant_bbflower_seed_1",
       "is_raw": true,
       "name": "Aketine Seed",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_grass_1.webp",
       "id": "item_plant_grass_1",
       "is_raw": true,
       "name": "Jincao",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_grass_seed_1.webp",
       "id": "item_plant_grass_seed_1",
       "is_raw": true,
       "name": "Jincao Seed",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_grass_2.webp",
       "id": "item_plant_grass_2",
       "is_raw": true,
       "name": "Yazhen",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_grass_seed_2.webp",
       "id": "item_plant_grass_seed_2",
       "is_raw": true,
       "name": "Yazhen Seed",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_sp_1.webp",
       "id": "item_plant_sp_1",
       "is_raw": true,
       "name": "Reed Rye",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_sp_2.webp",
       "id": "item_plant_sp_2",
       "is_raw": true,
       "name": "Tartpepper",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_sp_3.webp",
       "id": "item_plant_sp_3",
       "is_raw": true,
       "name": "Redjade Ginseng",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_sp_4.webp",
       "id": "item_plant_sp_4",
       "is_raw": true,
       "name": "Amber Rice",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_sp_seed_1.webp",
       "id": "item_plant_sp_seed_1",
       "is_raw": true,
       "name": "Reed Rye Seed",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_sp_seed_2.webp",
       "id": "item_plant_sp_seed_2",
       "is_raw": true,
       "name": "Tartpepper Seed",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_sp_seed_3.webp",
       "id": "item_plant_sp_seed_3",
       "is_raw": true,
       "name": "Redjade Ginseng Seed",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_sp_seed_4.webp",
       "id": "item_plant_sp_seed_4",
       "is_raw": true,
       "name": "Amber Rice Seed",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_tundra_wood.webp",
       "id": "item_plant_tundra_wood",
       "is_raw": true,
       "name": "Wood",
-      "tier": 1
+      "tier": 1,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_carbon_mtl.webp",
       "id": "item_carbon_mtl",
       "is_raw": false,
       "name": "Carbon",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_crystal_shell.webp",
       "id": "item_crystal_shell",
       "is_raw": false,
       "name": "Origocrust",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_quartz_glass.webp",
       "id": "item_quartz_glass",
       "is_raw": false,
       "name": "Amethyst Fiber",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_iron_nugget.webp",
       "id": "item_iron_nugget",
       "is_raw": false,
       "name": "Ferrium",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_originium_powder.webp",
       "id": "item_originium_powder",
       "is_raw": false,
       "name": "Originium Powder",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_carbon_powder.webp",
       "id": "item_carbon_powder",
       "is_raw": false,
       "name": "Carbon Powder",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_crystal_powder.webp",
       "id": "item_crystal_powder",
       "is_raw": false,
       "name": "Origocrust Powder",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_quartz_powder.webp",
       "id": "item_quartz_powder",
       "is_raw": false,
       "name": "Amethyst Powder",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_iron_powder.webp",
       "id": "item_iron_powder",
       "is_raw": false,
       "name": "Ferrium Powder",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_moss_powder_3.webp",
       "id": "item_plant_moss_powder_3",
       "is_raw": false,
       "name": "Sandleaf Powder",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_bbflower_powder_1.webp",
       "id": "item_plant_bbflower_powder_1",
       "is_raw": false,
       "name": "Aketine Powder",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_originium_enr_powder.webp",
       "id": "item_originium_enr_powder",
       "is_raw": false,
       "name": "Dense Originium Powder",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_carbon_enr_powder.webp",
       "id": "item_carbon_enr_powder",
       "is_raw": false,
       "name": "Dense Carbon Powder",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_crystal_enr_powder.webp",
       "id": "item_crystal_enr_powder",
       "is_raw": false,
       "name": "Dense Origocrust Powder",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_quartz_enr_powder.webp",
       "id": "item_quartz_enr_powder",
       "is_raw": false,
       "name": "Cryston Powder",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_iron_enr_powder.webp",
       "id": "item_iron_enr_powder",
       "is_raw": false,
       "name": "Dense Ferrium Powder",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_moss_enr_powder_1.webp",
       "id": "item_plant_moss_enr_powder_1",
       "is_raw": false,
       "name": "Ground Buckflower Powder",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_moss_enr_powder_2.webp",
       "id": "item_plant_moss_enr_powder_2",
       "is_raw": false,
       "name": "Ground Citrome Powder",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_carbon_enr.webp",
       "id": "item_carbon_enr",
       "is_raw": false,
       "name": "Stabilized Carbon",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_crystal_enr.webp",
       "id": "item_crystal_enr",
       "is_raw": false,
       "name": "Packed Origocrust",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_quartz_enr.webp",
       "id": "item_quartz_enr",
       "is_raw": false,
       "name": "Cryston Fiber",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_iron_enr.webp",
       "id": "item_iron_enr",
       "is_raw": false,
       "name": "Steel",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_muck_xiranite_1.webp",
       "id": "item_muck_xiranite_1",
       "is_raw": false,
       "name": "Bumper-Rich",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_glass_grass_1.webp",
       "id": "item_fbottle_glass_grass_1",
       "is_raw": false,
       "name": "Amethyst Bottle",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_glass_grass_2.webp",
       "id": "item_fbottle_glass_grass_2",
       "is_raw": false,
       "name": "Amethyst Bottle",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_glass_water.webp",
       "id": "item_fbottle_glass_water",
       "is_raw": false,
       "name": "Amethyst Bottle",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_glass_xiranite.webp",
       "id": "item_fbottle_glass_xiranite",
       "is_raw": false,
       "name": "Amethyst Bottle",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_glass_bottle.webp",
       "id": "item_glass_bottle",
       "is_raw": false,
       "name": "Amethyst Bottle",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_glassenr_grass_1.webp",
       "id": "item_fbottle_glassenr_grass_1",
       "is_raw": false,
       "name": "Cryston Bottle",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_glassenr_grass_2.webp",
       "id": "item_fbottle_glassenr_grass_2",
       "is_raw": false,
       "name": "Cryston Bottle",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_glassenr_water.webp",
       "id": "item_fbottle_glassenr_water",
       "is_raw": false,
       "name": "Cryston Bottle",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_glassenr_xiranite.webp",
       "id": "item_fbottle_glassenr_xiranite",
       "is_raw": false,
       "name": "Cryston Bottle",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_glass_enr_bottle.webp",
       "id": "item_glass_enr_bottle",
       "is_raw": false,
       "name": "Cryston Bottle",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_iron_grass_1.webp",
       "id": "item_fbottle_iron_grass_1",
       "is_raw": false,
       "name": "Ferrium Bottle",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_iron_grass_2.webp",
       "id": "item_fbottle_iron_grass_2",
       "is_raw": false,
       "name": "Ferrium Bottle",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_iron_water.webp",
       "id": "item_fbottle_iron_water",
       "is_raw": false,
       "name": "Ferrium Bottle",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_iron_xiranite.webp",
       "id": "item_fbottle_iron_xiranite",
       "is_raw": false,
       "name": "Ferrium Bottle",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_iron_bottle.webp",
       "id": "item_iron_bottle",
       "is_raw": false,
       "name": "Ferrium Bottle",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_ironenr_grass_1.webp",
       "id": "item_fbottle_ironenr_grass_1",
       "is_raw": false,
       "name": "Steel Bottle",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_ironenr_grass_2.webp",
       "id": "item_fbottle_ironenr_grass_2",
       "is_raw": false,
       "name": "Steel Bottle",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_ironenr_water.webp",
       "id": "item_fbottle_ironenr_water",
       "is_raw": false,
       "name": "Steel Bottle",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_fbottle_ironenr_xiranite.webp",
       "id": "item_fbottle_ironenr_xiranite",
       "is_raw": false,
       "name": "Steel Bottle",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_iron_enr_bottle.webp",
       "id": "item_iron_enr_bottle",
       "is_raw": false,
       "name": "Steel Bottle",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_xiranite_powder.webp",
       "id": "item_xiranite_powder",
       "is_raw": false,
       "name": "Xiranite",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_proc_battery_1.webp",
       "id": "item_proc_battery_1",
       "is_raw": false,
       "name": "LC Valley Battery",
-      "tier": 3
+      "tier": 3,
+      "state": "solid",
+      "fuel_val": {
+        "power": 220,
+        "duration": 40
+      }
     },
     {
       "icon": "/images/items/item_proc_battery_2.webp",
       "id": "item_proc_battery_2",
       "is_raw": false,
       "name": "SC Valley Battery",
-      "tier": 3
+      "tier": 3,
+      "state": "solid",
+      "fuel_val": {
+        "power": 420,
+        "duration": 40
+      }
     },
     {
       "icon": "/images/items/item_proc_battery_3.webp",
       "id": "item_proc_battery_3",
       "is_raw": false,
       "name": "HC Valley Battery",
-      "tier": 4
+      "tier": 4,
+      "state": "solid",
+      "fuel_val": {
+        "power": 1100,
+        "duration": 40
+      }
     },
     {
       "icon": "/images/items/item_proc_battery_4.webp",
       "id": "item_proc_battery_4",
       "is_raw": false,
       "name": "LC Wuling Battery",
-      "tier": 4
+      "tier": 4,
+      "state": "solid",
+      "fuel_val": {
+        "power": 1600,
+        "duration": 40
+      }
     },
     {
       "icon": "/images/items/item_glass_cmpt.webp",
       "id": "item_glass_cmpt",
       "is_raw": false,
       "name": "Amethyst Part",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_glass_enr_cmpt.webp",
       "id": "item_glass_enr_cmpt",
       "is_raw": false,
       "name": "Cryston Part",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_iron_cmpt.webp",
       "id": "item_iron_cmpt",
       "is_raw": false,
       "name": "Ferrium Part",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_iron_enr_cmpt.webp",
       "id": "item_iron_enr_cmpt",
       "is_raw": false,
       "name": "Steel Part",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_equip_script_1.webp",
       "id": "item_equip_script_1",
       "is_raw": false,
       "name": "Amethyst Component",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_equip_script_2.webp",
       "id": "item_equip_script_2",
       "is_raw": false,
       "name": "Ferrium Component",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_equip_script_3.webp",
       "id": "item_equip_script_3",
       "is_raw": false,
       "name": "Cryston Component",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_equip_script_4.webp",
       "id": "item_equip_script_4",
       "is_raw": false,
       "name": "Xiranite Component",
-      "tier": 4
+      "tier": 4,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_liquid_plant_grass_1.webp",
       "id": "item_liquid_plant_grass_1",
       "is_raw": false,
       "name": "Jincao Solution",
-      "tier": 3
+      "tier": 3,
+      "state": "fluid"
     },
     {
       "icon": "/images/items/item_liquid_plant_grass_2.webp",
       "id": "item_liquid_plant_grass_2",
       "is_raw": false,
       "name": "Yazhen Solution",
-      "tier": 3
+      "tier": 3,
+      "state": "fluid"
     },
     {
       "icon": "/images/items/item_liquid_xiranite.webp",
       "id": "item_liquid_xiranite",
       "is_raw": false,
       "name": "Liquid Xiranite",
-      "tier": 3
+      "tier": 3,
+      "state": "fluid"
     },
     {
       "icon": "/images/items/item_bottled_food_1.webp",
       "id": "item_bottled_food_1",
       "is_raw": false,
       "name": "Canned Citrome [C]",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_bottled_food_2.webp",
       "id": "item_bottled_food_2",
       "is_raw": false,
       "name": "Canned Citrome [B]",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_bottled_food_3.webp",
       "id": "item_bottled_food_3",
       "is_raw": false,
       "name": "Canned Citrome [A]",
-      "tier": 4
+      "tier": 4,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_bottled_food_4.webp",
       "id": "item_bottled_food_4",
       "is_raw": false,
       "name": "Jincao Drink",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_bottled_rec_hp_1.webp",
       "id": "item_bottled_rec_hp_1",
       "is_raw": false,
       "name": "Buck Capsule [C]",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_bottled_rec_hp_2.webp",
       "id": "item_bottled_rec_hp_2",
       "is_raw": false,
       "name": "Buck Capsule [B]",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_bottled_rec_hp_3.webp",
       "id": "item_bottled_rec_hp_3",
       "is_raw": false,
       "name": "Buck Capsule [A]",
-      "tier": 4
+      "tier": 4,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_bottled_rec_hp_4.webp",
       "id": "item_bottled_rec_hp_4",
       "is_raw": false,
       "name": "Yazhen Syringe [C]",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_moss_powder_1.webp",
       "id": "item_plant_moss_powder_1",
       "is_raw": false,
       "name": "Buckflower Powder",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_moss_powder_2.webp",
       "id": "item_plant_moss_powder_2",
       "is_raw": false,
       "name": "Citrome Powder",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_grass_powder_1.webp",
       "id": "item_plant_grass_powder_1",
       "is_raw": false,
       "name": "Jincao Powder",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_plant_grass_powder_2.webp",
       "id": "item_plant_grass_powder_2",
       "is_raw": false,
       "name": "Yazhen Powder",
-      "tier": 2
+      "tier": 2,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_proc_bomb_1.webp",
       "id": "item_proc_bomb_1",
       "is_raw": false,
       "name": "Industrial Explosive",
-      "tier": 3
+      "tier": 3,
+      "state": "solid"
     },
     {
       "icon": "/images/items/item_muck_feces_1.webp",

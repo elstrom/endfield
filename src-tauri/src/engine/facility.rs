@@ -21,7 +21,12 @@ pub struct Facility {
     #[serde(default)]
     pub tier: u32,
     pub icon: Option<String>,
+    pub category: Option<String>,
     pub ports: Option<Vec<Port>>,
+    pub input_slots: Option<u32>,
+    pub output_slots: Option<u32>,
+    pub throughput_limit: Option<f32>,
+    pub is_filter: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
