@@ -30,8 +30,8 @@
       "text": "#d3d3d3",
       "workspace_bg": "#1e1e1e"
     },
-    "world_size_tiles_x": 3,
-    "world_size_tiles_y": 3,
+    "world_size_tiles_x": 64,
+    "world_size_tiles_y": 40,
     "zoom_level": 1
   },
   "facilities": [

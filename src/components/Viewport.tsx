@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import * as PIXI from "pixi.js";
 import { useSandbox } from "../hooks/useSandbox";
+import { debugLog } from "../utils/logger";
 
 declare global {
     interface Window {
@@ -15,10 +16,15 @@ declare global {
     }
 }
 
-export function Viewport({ appData }: { appData: any }) {
+export function Viewport({ appData, draggedFacilityId }: { appData: any, draggedFacilityId: string | null }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const appRef = useRef<PIXI.Application | null>(null);
     const worldRef = useRef<PIXI.Container | null>(null);
+
+    const draggedFacilityIdRef = useRef<string | null>(null);
+    const mousePosRef = useRef<{ x: number, y: number }>({ x: 0, y: 0 });
+
+    useEffect(() => { draggedFacilityIdRef.current = draggedFacilityId; }, [draggedFacilityId]);
 
     const { placedFacilities, edges, addFacility, addEdge, isColliding } = useSandbox();
     const [selectedFacilityId] = useState<string | null>(null);
@@ -50,7 +56,10 @@ export function Viewport({ appData }: { appData: any }) {
     // Compass Overlay State
     const [compassRotation, setCompassRotation] = useState(0);
     useEffect(() => {
-        const handleUpdate = (e: any) => setCompassRotation(e.detail.rotation);
+        const handleUpdate = (e: any) => {
+            debugLog("[ViewportInteraction] compass-update received", e.detail);
+            setCompassRotation(e.detail.rotation);
+        };
         window.addEventListener('viewport-update', handleUpdate);
         return () => window.removeEventListener('viewport-update', handleUpdate);
     }, []);
@@ -58,6 +67,7 @@ export function Viewport({ appData }: { appData: any }) {
     // Scene Rendering (Facilities & Topology)
     useEffect(() => {
         if (!containerRef.current || !appRef.current || !worldRef.current || !config) return;
+        debugLog("[ViewportInteraction] Render Scene Triggered");
         const world = worldRef.current;
 
         let facilitiesLayer = world.children.find(c => c.label === "facilities") as PIXI.Container;
@@ -146,14 +156,36 @@ export function Viewport({ appData }: { appData: any }) {
         renderScene();
     }, [placedFacilities, edges, selectedFacilityId, appData, config, GRID_SIZE]);
 
-    // MAIN INITIALIZATION
+    // --- COMPONENT STATE REF ---
+    // Moving interaction state to refs to persist across re-renders without re-init
+    const interactionState = useRef({
+        targetPivot: { x: 0, y: 0 },
+        currentPivot: { x: 0, y: 0 },
+        targetZoom: 1,
+        currentZoom: 1,
+        targetRotation: 0,
+        currentRotation: 0,
+        isDragging: false,
+        spacePressed: false,
+        keysPressed: {} as Record<string, boolean>,
+        // Initialize flag to prevent resetting view on every render
+        initialized: false
+    });
+
+    // --- PIXI SETUP ---
     useEffect(() => {
-        if (!containerRef.current || !config) return;
+        if (!containerRef.current || !config || !interactionState.current) return;
+        const GRID_SIZE = config.grid_size || 64;
 
-        let cleanupEvents: () => void = () => { };
+        // Cleanup previous app if exists
+        if (appRef.current) {
+            appRef.current.destroy(true, { children: true, texture: true });
+            appRef.current = null;
+        }
 
-        const init = async () => {
-            const app = new PIXI.Application();
+        const app = new PIXI.Application();
+        const initPixi = async () => {
+            debugLog("[ViewportInteraction] Initializing PIXI Application");
             await app.init({
                 resizeTo: containerRef.current!,
                 backgroundColor: config.theme?.workspace_bg ? parseInt(config.theme.workspace_bg.replace('#', '0x')) : 0x1e1e1e,
@@ -161,7 +193,8 @@ export function Viewport({ appData }: { appData: any }) {
                 resolution: window.devicePixelRatio || 1,
             });
 
-            containerRef.current!.appendChild(app.canvas);
+            if (!containerRef.current) return; // safety check after await
+            containerRef.current.appendChild(app.canvas);
             appRef.current = app;
 
             const world = new PIXI.Container();
@@ -198,239 +231,340 @@ export function Viewport({ appData }: { appData: any }) {
             grid.stroke();
             world.addChild(grid);
 
-
             world.setChildIndex(shadow, 0);
             world.setChildIndex(artboard, 1);
             world.setChildIndex(grid, 2);
 
-            // --- CAMERA SETUP ---
+            const previewLayer = new PIXI.Container();
+            previewLayer.label = "preview";
+            world.addChild(previewLayer);
+            world.setChildIndex(previewLayer, 3);
 
-            // Initial Centering Calculation
-            const mapCenterX = mapWidth / 2;
-            const mapCenterY = mapHeight / 2;
+            // --- CAMERA INIT ---
+            const state = interactionState.current;
+            if (!state.initialized) {
+                const mapCenterX = mapWidth / 2;
+                const mapCenterY = mapHeight / 2;
+                const padding = 100;
+                const fitZoom = Math.min(
+                    (app.screen.width - padding) / mapWidth,
+                    (app.screen.height - padding) / mapHeight
+                );
+                const initialZoom = Math.min(Math.max(fitZoom, 0.5), 2.0);
 
-            // "Fit Screen" Zoom
-            const padding = 100;
-            const fitZoom = Math.min(
-                (app.screen.width - padding) / mapWidth,
-                (app.screen.height - padding) / mapHeight
-            );
-            const initialZoom = Math.min(Math.max(fitZoom, 0.5), 2.0);
+                state.targetPivot = { x: mapCenterX, y: mapCenterY };
+                state.currentPivot = { x: mapCenterX, y: mapCenterY };
+                state.targetZoom = initialZoom;
+                state.currentZoom = initialZoom;
+                state.initialized = true;
+            }
 
-            // Set Initial State
-            // Pivot is ALWAYS the point on the map that is at Screen Center.
-            // Initially, we want Map Center at Screen Center.
-            let targetPivot = { x: mapCenterX, y: mapCenterY };
-            let currentPivot = { x: mapCenterX, y: mapCenterY };
-
-            let targetZoom = initialZoom;
-            let currentZoom = initialZoom;
-
-            let targetRotation = 0;
-            let currentRotation = 0;
-
-            // Apply Immediately
-            world.pivot.set(currentPivot.x, currentPivot.y);
+            // Apply specific initial transform
+            world.pivot.set(state.currentPivot.x, state.currentPivot.y);
             world.position.set(app.screen.width / 2, app.screen.height / 2);
-            world.scale.set(currentZoom);
-            world.rotation = currentRotation;
+            world.scale.set(state.currentZoom);
+            world.rotation = state.currentRotation;
 
-            // --- INTERACTION STATE ---
-
-            const keysPressed: Record<string, boolean> = {};
-            let isDragging = false;
-            let spacePressed = false;
-            const PAN_SPEED = 15;
 
             // --- TICKER ---
-
+            const PAN_SPEED = 15;
             app.ticker.add(() => {
-                const cx = app.screen.width / 2 - 123.5;
-                const cy = app.screen.height / 2 - 76;
+                const state = interactionState.current;
 
-                // Ensure World Position is Screen Center
+                // Keep world center-screen
+                const cx = app.screen.width / 2;
+                const cy = app.screen.height / 2;
                 world.position.set(cx, cy);
 
                 // 1. WASD Panning
-                if (!spacePressed && !keysPressed["AltLeft"] && !keysPressed["AltRight"]) {
+                if (!state.spacePressed && !state.keysPressed["AltLeft"] && !state.keysPressed["AltRight"]) {
                     let dx = 0;
                     let dy = 0;
-                    if (keysPressed["KeyW"]) dy -= PAN_SPEED;
-                    if (keysPressed["KeyS"]) dy += PAN_SPEED;
-                    if (keysPressed["KeyA"]) dx -= PAN_SPEED;
-                    if (keysPressed["KeyD"]) dx += PAN_SPEED;
+                    if (state.keysPressed["KeyW"]) dy -= PAN_SPEED;
+                    if (state.keysPressed["KeyS"]) dy += PAN_SPEED;
+                    if (state.keysPressed["KeyA"]) dx -= PAN_SPEED;
+                    if (state.keysPressed["KeyD"]) dx += PAN_SPEED;
 
                     if (dx !== 0 || dy !== 0) {
-                        // Transform Screen Delta -> Map Delta
-                        // Rotate input vector by -TargetRotation
-                        const cos = Math.cos(-targetRotation);
-                        const sin = Math.sin(-targetRotation);
-                        const s = targetZoom;
-
+                        const cos = Math.cos(-state.targetRotation);
+                        const sin = Math.sin(-state.targetRotation);
+                        const s = state.targetZoom;
                         const rdx = (dx * cos - dy * sin) / s;
                         const rdy = (dx * sin + dy * cos) / s;
-
-                        targetPivot.x += rdx;
-                        targetPivot.y += rdy;
+                        state.targetPivot.x += rdx;
+                        state.targetPivot.y += rdy;
                     }
                 }
 
                 // 2. Lerp
                 const lerpPos = 0.3;
-                if (Math.abs(targetPivot.x - currentPivot.x) > 0.1 || Math.abs(targetPivot.y - currentPivot.y) > 0.1) {
-                    currentPivot.x += (targetPivot.x - currentPivot.x) * lerpPos;
-                    currentPivot.y += (targetPivot.y - currentPivot.y) * lerpPos;
+                if (Math.abs(state.targetPivot.x - state.currentPivot.x) > 0.1 || Math.abs(state.targetPivot.y - state.currentPivot.y) > 0.1) {
+                    state.currentPivot.x += (state.targetPivot.x - state.currentPivot.x) * lerpPos;
+                    state.currentPivot.y += (state.targetPivot.y - state.currentPivot.y) * lerpPos;
                 } else {
-                    currentPivot.x = targetPivot.x;
-                    currentPivot.y = targetPivot.y;
+                    state.currentPivot.x = state.targetPivot.x;
+                    state.currentPivot.y = state.targetPivot.y;
                 }
 
-                if (Math.abs(targetZoom - currentZoom) > 0.001) {
-                    currentZoom += (targetZoom - currentZoom) * 0.2;
+                if (Math.abs(state.targetZoom - state.currentZoom) > 0.001) {
+                    state.currentZoom += (state.targetZoom - state.currentZoom) * 0.2;
                 } else {
-                    currentZoom = targetZoom;
+                    state.currentZoom = state.targetZoom;
                 }
 
-                if (Math.abs(targetRotation - currentRotation) > 0.001) {
-                    currentRotation += (targetRotation - currentRotation) * 0.08;
+                if (Math.abs(state.targetRotation - state.currentRotation) > 0.001) {
+                    state.currentRotation += (state.targetRotation - state.currentRotation) * 0.08;
                 } else {
-                    currentRotation = targetRotation;
+                    state.currentRotation = state.targetRotation;
                 }
 
                 // 3. Apply
-                world.pivot.set(currentPivot.x, currentPivot.y);
-                world.scale.set(currentZoom);
-                world.rotation = currentRotation;
+                world.pivot.set(state.currentPivot.x, state.currentPivot.y);
+                world.scale.set(state.currentZoom);
+                world.rotation = state.currentRotation;
 
-                // Expose debug info
-                // if (window.viewportState) {
-                //     window.viewportState = { pivot: currentPivot, rot: currentRotation, zoom: currentZoom };
-                // }
-            });
+                // --- PREVIEW RENDER ---
+                previewLayer.removeChildren();
+                const currentDraggedId = draggedFacilityIdRef.current;
 
-            // --- EVENTS ---
+                // Note: We need to access appData from prop/window safely if not in dependency
+                // But we can check window.appData as fallback or use a ref for appData if needed.
+                // Since appData is a prop, we should ideally use a ref for it if we use it in ticker.
+                // However, the original code used window.appData or enclosure. 
+                // Let's rely on window.appData for now as it's synced.
+                if (currentDraggedId && window.appData?.facilities) {
+                    const meta = window.appData.facilities.find((f: any) => f.id === currentDraggedId);
+                    if (meta) {
+                        const mPos = mousePosRef.current;
+                        // Local to World
+                        const worldPoint = world.toLocal({ x: mPos.x, y: mPos.y });
+                        const snapX = Math.floor(worldPoint.x / GRID_SIZE) * GRID_SIZE;
+                        const snapY = Math.floor(worldPoint.y / GRID_SIZE) * GRID_SIZE;
 
-            const onKeyDown = (e: KeyboardEvent) => {
-                if ((e.target as HTMLElement).tagName === "INPUT") return;
-                keysPressed[e.code] = true;
-                if (e.code === "Space" && !e.repeat) {
-                    spacePressed = true;
-                    isDragging = true; // Drag immediately on Key Down
-                    app.canvas.style.cursor = "grabbing";
-                }
+                        const gfx = new PIXI.Graphics();
+                        const width = (meta.width || 1) * GRID_SIZE;
+                        const height = (meta.height || 1) * GRID_SIZE;
 
-                if (e.code === "KeyH") {
-                    targetPivot.x = mapCenterX;
-                    targetPivot.y = mapCenterY;
-                    targetZoom = initialZoom;
-                    targetRotation = 0;
-                }
+                        gfx.beginFill(0x0078d7, 0.3);
+                        gfx.lineStyle(2, 0x0078d7, 0.8);
+                        gfx.drawRect(0, 0, width, height);
+                        gfx.endFill();
 
-                if (e.altKey) {
-                    if (e.code === "KeyA") {
-                        targetRotation -= Math.PI / 2;
-                        window.dispatchEvent(new CustomEvent('viewport-update', { detail: { rotation: targetRotation } }));
-                    } else if (e.code === "KeyD") {
-                        targetRotation += Math.PI / 2;
-                        window.dispatchEvent(new CustomEvent('viewport-update', { detail: { rotation: targetRotation } }));
+                        if (meta.ports) {
+                            for (const port of meta.ports) {
+                                const px = port.x * GRID_SIZE + GRID_SIZE / 2;
+                                const py = port.y * GRID_SIZE + GRID_SIZE / 2;
+                                gfx.beginFill(port.type === 'input' ? 0x00FF00 : 0xFF0000);
+                                gfx.drawCircle(px, py, 6);
+                                gfx.endFill();
+                            }
+                        }
+                        gfx.x = snapX;
+                        gfx.y = snapY;
+                        previewLayer.addChild(gfx);
+
+                        debugLog("[ViewportInteraction] Previewing placement at", snapX, snapY);
                     }
                 }
-            };
-
-            const onKeyUp = (e: KeyboardEvent) => {
-                keysPressed[e.code] = false;
-                if (e.code === "Space") {
-                    spacePressed = false;
-                    isDragging = false; // Stop dragging on Key Up
-                    app.canvas.style.cursor = "default";
-                }
-            };
-            window.addEventListener("keydown", onKeyDown);
-            window.addEventListener("keyup", onKeyUp);
-
-            const onWheel = (e: WheelEvent) => {
-                e.preventDefault();
-                if (e.ctrlKey) {
-                    // Zoom
-                    const zoomFactor = Math.exp(-e.deltaY * 0.001);
-                    targetZoom = Math.min(Math.max(targetZoom * zoomFactor, 0.1), 5.0);
-                } else {
-                    // Pan
-                    const dx = e.deltaX;
-                    const dy = e.deltaY;
-                    const cos = Math.cos(-targetRotation);
-                    const sin = Math.sin(-targetRotation);
-                    const s = targetZoom;
-                    const rdx = (dx * cos - dy * sin) / s;
-                    const rdy = (dx * sin + dy * cos) / s;
-                    targetPivot.x += rdx;
-                    targetPivot.y += rdy;
-                }
-            };
-            app.canvas.addEventListener("wheel", onWheel, { passive: false });
-
-            const onMouseDown = (e: MouseEvent) => {
-                if (isValidPanClick(e)) {
-                    isDragging = true;
-                    app.canvas.style.cursor = "grabbing";
-                }
-            };
-            const isValidPanClick = (e: MouseEvent) => e.button === 1 || spacePressed; // Middle or Space+Left
-
-            app.canvas.addEventListener("mousedown", onMouseDown);
-
-            const onMouseMove = (e: MouseEvent) => {
-                if (isDragging) {
-                    const dx = e.movementX;
-                    const dy = e.movementY;
-
-                    // Drag Pan: Invert Delta
-                    const cos = Math.cos(-targetRotation);
-                    const sin = Math.sin(-targetRotation);
-                    const s = targetZoom;
-
-                    const ndx = -dx;
-                    const ndy = -dy;
-
-                    const rdx = (ndx * cos - ndy * sin) / s;
-                    const rdy = (ndx * sin + ndy * cos) / s;
-
-                    targetPivot.x += rdx;
-                    targetPivot.y += rdy;
-
-                    // Snap current to target for crisp drag
-                    currentPivot.x = targetPivot.x;
-                    currentPivot.y = targetPivot.y;
-                }
-            };
-            window.addEventListener("mousemove", onMouseMove);
-
-            const onMouseUp = () => { isDragging = false; app.canvas.style.cursor = spacePressed ? "grabbing" : "default"; };
-            window.addEventListener("mouseup", onMouseUp);
-
-            cleanupEvents = () => {
-                window.removeEventListener("keydown", onKeyDown);
-                window.removeEventListener("keyup", onKeyUp);
-                window.removeEventListener("mousemove", onMouseMove);
-                window.removeEventListener("mouseup", onMouseUp);
-            };
+            });
         };
 
-        if (!appRef.current) init();
+        initPixi();
 
         return () => {
-            if (cleanupEvents) cleanupEvents();
             if (appRef.current) {
                 appRef.current.destroy(true, { children: true, texture: true });
                 appRef.current = null;
             }
         };
-    }, [config]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [JSON.stringify(config)]); // Re-run only if config CONTENT changes
+
+    // --- EVENTS SETUP ---
+    useEffect(() => {
+        // Event Handlers that use refs (stable)
+
+        const onKeyDown = (e: KeyboardEvent) => {
+            debugLog("[ViewportInteraction] KeyDown:", e.code);
+            if ((e.target as HTMLElement).tagName === "INPUT") return;
+            const state = interactionState.current;
+            state.keysPressed[e.code] = true;
+
+            if (e.code === "Space" && !e.repeat) {
+                debugLog("[ViewportInteraction] Space Pressed - Pan Mode Active");
+                state.spacePressed = true;
+                state.isDragging = true;
+                if (appRef.current?.canvas) appRef.current.canvas.style.cursor = "grabbing";
+            }
+
+            if (e.code === "KeyH") {
+                // Reset Home (needs Map Dimensions... wait, we need map dimensions here.)
+                // We'll reset to 0,0 or preserve the logic if we access config.
+                // Since this effect has no deps, we can't easily access mapWidth/Height unless we calculate them again or store them in state.
+                // For now, reset to 0,0 or current target.
+                // Let's rely on config being available globally or via window since it's stable-ish.
+                const tilesX = window.config?.world_size_tiles_x || 64;
+                const tilesY = window.config?.world_size_tiles_y || 40;
+                const GS = window.config?.grid_size || 64;
+                state.targetPivot = { x: (tilesX * GS) / 2, y: (tilesY * GS) / 2 };
+                state.targetZoom = 1.0;
+                state.targetRotation = 0;
+            }
+
+            if (e.altKey) {
+                if (e.code === "KeyA") {
+                    debugLog("[ViewportInteraction] Alt+A - Rotate Left");
+                    state.targetRotation -= Math.PI / 2;
+                    window.dispatchEvent(new CustomEvent('viewport-update', { detail: { rotation: state.targetRotation } }));
+                } else if (e.code === "KeyD") {
+                    debugLog("[ViewportInteraction] Alt+D - Rotate Right");
+                    state.targetRotation += Math.PI / 2;
+                    window.dispatchEvent(new CustomEvent('viewport-update', { detail: { rotation: state.targetRotation } }));
+                }
+            }
+        };
+
+        const onKeyUp = (e: KeyboardEvent) => {
+            debugLog("[ViewportInteraction] KeyUp:", e.code);
+            const state = interactionState.current;
+            state.keysPressed[e.code] = false;
+            if (e.code === "Space") {
+                state.spacePressed = false;
+                state.isDragging = false;
+                if (appRef.current?.canvas) appRef.current.canvas.style.cursor = "default";
+            }
+        };
+
+        const onMouseMove = (e: MouseEvent) => {
+            // 1. Update Mouse Pos Ref always
+            if (containerRef.current) {
+                const rect = containerRef.current.getBoundingClientRect();
+                mousePosRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+                // debugLog("[ViewportInteraction] MouseMove:", mousePosRef.current); // Too noisy? 
+            }
+
+            const state = interactionState.current;
+            if (state.isDragging) {
+                const dx = e.movementX;
+                const dy = e.movementY;
+                const cos = Math.cos(-state.targetRotation);
+                const sin = Math.sin(-state.targetRotation);
+                const s = state.targetZoom;
+                const ndx = -dx;
+                const ndy = -dy;
+                const rdx = (ndx * cos - ndy * sin) / s;
+                const rdy = (ndx * sin + ndy * cos) / s;
+                state.targetPivot.x += rdx;
+                state.targetPivot.y += rdy;
+                state.currentPivot.x = state.targetPivot.x;
+                state.currentPivot.y = state.targetPivot.y;
+                debugLog("[ViewportInteraction] Dragging Viewport delta:", dx, dy);
+            }
+        };
+
+        const onMouseUp = (e: MouseEvent) => {
+            debugLog("[ViewportInteraction] MouseUp");
+            const draggedId = draggedFacilityIdRef.current;
+            const state = interactionState.current;
+
+            // 1. Handle Placement
+            if (draggedId && appRef.current && worldRef.current && containerRef.current) {
+                debugLog("[Viewport] MouseUp Detected. DraggedId:", draggedId);
+                const rect = containerRef.current.getBoundingClientRect();
+                const clientX = e.clientX - rect.left;
+                const clientY = e.clientY - rect.top;
+                const GRID_SIZE = window.config?.grid_size || 64; // Use window config for access in handler
+
+                if (clientX >= 0 && clientX <= rect.width && clientY >= 0 && clientY <= rect.height) {
+                    const worldPoint = worldRef.current.toLocal({ x: clientX, y: clientY });
+                    const snapX = Math.floor(worldPoint.x / GRID_SIZE) * GRID_SIZE;
+                    const snapY = Math.floor(worldPoint.y / GRID_SIZE) * GRID_SIZE;
+
+                    debugLog("[ViewportInteraction] Dropping Facility:", draggedId, "at", snapX, snapY);
+                    debugLog("[Viewport] Placing at:", snapX, snapY);
+                    window.addFacility(draggedId, snapX, snapY);
+                } else {
+                    debugLog("[Viewport] Dropped outside bounds.");
+                }
+            } else {
+                // debugLog("[Viewport] MouseUp ignored (No active drag or refs missing).");
+            }
+
+            // 2. Stop Dragging Viewport
+            state.isDragging = false;
+            if (appRef.current?.canvas) {
+                appRef.current.canvas.style.cursor = state.spacePressed ? "grabbing" : "default";
+            }
+        };
+
+
+
+        // Attach global listeners
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("keyup", onKeyUp);
+        window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("mouseup", onMouseUp);
+
+        // For Wheel, we need to bind to the canvas element specifically (passive: false)
+        // But the canvas is created asynchronously in the OTHER effect.
+        // Solution: Add a MutationObserver or poll? 
+        // Simplest: Add wheel listener to containerRef which exists.
+        const container = containerRef.current;
+        const onContainerWheel = (e: WheelEvent) => {
+            e.preventDefault();
+            const state = interactionState.current;
+            debugLog("[ViewportInteraction] Wheel Event", { ctrl: e.ctrlKey, deltaY: e.deltaY, deltaX: e.deltaX });
+            if (e.ctrlKey) {
+                const zoomFactor = Math.exp(-e.deltaY * 0.001);
+                state.targetZoom = Math.min(Math.max(state.targetZoom * zoomFactor, 0.1), 5.0);
+            } else {
+                const dx = e.deltaX;
+                const dy = e.deltaY;
+                const cos = Math.cos(-state.targetRotation);
+                const sin = Math.sin(-state.targetRotation);
+                const s = state.targetZoom;
+                const rdx = (dx * cos - dy * sin) / s;
+                const rdy = (dx * sin + dy * cos) / s;
+                state.targetPivot.x += rdx;
+                state.targetPivot.y += rdy;
+            }
+        };
+
+        // Also Pan-Start (MouseDown) needs to be on container/canvas
+        const onContainerMouseDown = (e: MouseEvent) => {
+            const state = interactionState.current;
+            const isValidPanClick = e.button === 1 || state.spacePressed;
+            debugLog("[ViewportInteraction] MouseDown", { button: e.button, spacePressed: state.spacePressed });
+            if (isValidPanClick) {
+                state.isDragging = true;
+                if (appRef.current?.canvas) appRef.current.canvas.style.cursor = "grabbing";
+            }
+        };
+
+        if (container) {
+            container.addEventListener("wheel", onContainerWheel, { passive: false });
+            container.addEventListener("mousedown", onContainerMouseDown);
+        }
+
+        return () => {
+            window.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("keyup", onKeyUp);
+            window.removeEventListener("mousemove", onMouseMove);
+            window.removeEventListener("mouseup", onMouseUp);
+            if (container) {
+                container.removeEventListener("wheel", onContainerWheel);
+                container.removeEventListener("mousedown", onContainerMouseDown);
+            }
+        };
+    }, []); // Run ONCE. Refs are stable.
 
     if (!config) return <div className="w-full h-full flex items-center justify-center text-white/20 font-bold uppercase tracking-widest bg-[#1e1e1e]">Loading Canvas...</div>;
 
     return (
-        <div ref={containerRef} className="w-full h-full relative outline-none select-none overflow-hidden bg-[#1e1e1e]">
+        <div
+            ref={containerRef}
+            className="w-full h-full relative outline-none select-none overflow-hidden bg-[#1e1e1e]"
+        >
             {/* Sticky Orientation Gizmo */}
             <div className="absolute top-[1em] right-[1em] z-10 pointer-events-none opacity-80">
                 <div
@@ -451,7 +585,7 @@ export function Viewport({ appData }: { appData: any }) {
 
             {/* Viewport Info Overlay */}
             <div className="absolute bottom-[1em] left-[1em] z-10 text-[0.75em] font-mono text-white/40 pointer-events-none">
-                Hints: Space/Middle-Click to Pan | Alt+A/D to Rotate | WASD to Move
+                Hints: Drag & Drop Facilities | Space/Middle-Click to Pan | Alt+A/D to Rotate | WASD to Move
             </div>
         </div>
     );

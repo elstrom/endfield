@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { debugLog } from "../utils/logger";
 
 export interface PlacedFacility {
     instanceId: string;
@@ -20,6 +21,7 @@ export function useSandbox() {
 
     // Sync to Rust Backend
     useEffect(() => {
+        debugLog("[useSandbox] Syncing state to Rust. Count:", placedFacilities.length);
         invoke("update_simulation_state", {
             facilities: placedFacilities.map(f => ({
                 instance_id: f.instanceId,
@@ -34,7 +36,9 @@ export function useSandbox() {
                 item_id: "placeholder", // Will be dynamic later
                 throughput: 1.0
             }))
-        });
+        })
+            .then(() => debugLog("[useSandbox] Sync Success"))
+            .catch(err => debugLog("[useSandbox] Sync Failed (ERROR):", err));
     }, [placedFacilities, edges]);
 
     const isColliding = useCallback((x: number, y: number, w: number, h: number, facilitiesData: any[]) => {
@@ -63,6 +67,7 @@ export function useSandbox() {
     }, [placedFacilities]);
 
     const addFacility = useCallback((facilityId: string, x: number, y: number) => {
+        debugLog("[useSandbox] addFacility called:", facilityId, x, y);
         const newFacility: PlacedFacility = {
             instanceId: Math.random().toString(36).substr(2, 9),
             facilityId,
@@ -70,7 +75,11 @@ export function useSandbox() {
             y,
             rotation: 0,
         };
-        setPlacedFacilities((prev) => [...prev, newFacility]);
+        setPlacedFacilities((prev) => {
+            debugLog("[useSandbox] Updating placedFacilities state. Prev count:", prev.length);
+            return [...prev, newFacility];
+        });
+        debugLog("[useSandbox] Facility added to state (queued):", newFacility.instanceId);
         return newFacility.instanceId;
     }, []);
 

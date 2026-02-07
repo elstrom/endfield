@@ -175,6 +175,11 @@ fn update_config(config: serde_json::Value) {
     crate::engine::data_loader::DataLoader::update_config(config);
 }
 
+#[tauri::command]
+fn log_to_terminal(msg: String) {
+    println!("[Frontend]: {}", msg);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     println!("DEBUG: Starting Endfield lib run()");
@@ -196,7 +201,7 @@ pub fn run() {
             optimizer,
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![update_config, get_grid_state, get_app_data, update_simulation_state, get_power_status, generate_optimal_layouts])
+        .invoke_handler(tauri::generate_handler![update_config, get_grid_state, get_app_data, update_simulation_state, get_power_status, generate_optimal_layouts, log_to_terminal])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

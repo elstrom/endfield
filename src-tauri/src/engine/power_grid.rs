@@ -40,9 +40,9 @@ impl PowerGrid {
 
         for facility in facilities {
             if let Some(geom) = geom_array.iter().find(|g| {
-                g["type"].as_str().unwrap_or("") == facility.facility_id
+                g["id"].as_str().unwrap_or("") == facility.facility_id
             }) {
-                let power = geom["power_consumption"].as_f64().unwrap_or(0.0) as f32;
+                let power = geom["power"].as_f64().unwrap_or(0.0) as f32;
 
                 if power < 0.0 {
                     // Generator (PAC, Thermal Bank)
@@ -55,7 +55,8 @@ impl PowerGrid {
                 }
 
                 // Check if it's a Power Diffuser (Electric Pylon)
-                if geom["type"].as_str().unwrap_or("") == "Power Diffuser" {
+                // Use name or id. Assuming "Power Diffuser" is the name.
+                if geom["name"].as_str().unwrap_or("") == "Power Diffuser" {
                     pylons.push(facility);
                 }
             }

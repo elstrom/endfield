@@ -1,48 +1,60 @@
-[plugin:vite:react-babel] D:\Gawe\AI\endfield\src\components\Viewport.tsx: 'return' outside of function. (380:13)
-
-  378 | }, [selectedFacilityId, addFacility, addEdge, isColliding, appData, placedFacilities, config]);
-  379 |
-> 380 | if (!config) return <div className="w-full h-full flex items-center justify-center text-white/20 font-bold uppercase tracking-widest bg-[#1e1e1e]">Loading Canvas...</div>;
-      |              ^
-  381 |
-  382 | return <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-[#1e1e1e]" />;
-  383 | }
-D:/Gawe/AI/endfield/src/components/Viewport.tsx:380:13
+[plugin:vite:react-babel] D:\Gawe\AI\endfield\src\components\Viewport.tsx: Unexpected token, expected "," (424:5)
+  427 |         debugLog("[ViewportInteraction] KeyUp:", e.code);
+D:/Gawe/AI/endfield/src/components/Viewport.tsx:424:5
+435 |      };
+436 |  
+437 |      const onMouseMove = (e: MouseEvent) => {
+    |           ^
+438 |          // 1. Update Mouse Pos Ref always
+439 |          if (containerRef.current) {
     at constructor (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:365:19)
     at TypeScriptParserMixin.raise (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:6599:19)
-    at TypeScriptParserMixin.parseReturnStatement (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:13136:12)
-    at TypeScriptParserMixin.parseStatementContent (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12798:21)
+    at TypeScriptParserMixin.unexpected (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:6619:16)
+    at TypeScriptParserMixin.expect (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:6899:12)
+    at TypeScriptParserMixin.parseCallExpressionArguments (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:11243:14)
+    at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:11186:29)
+    at TypeScriptParserMixin.parseSubscript (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:11120:19)
+    at TypeScriptParserMixin.parseSubscript (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:9272:18)
+    at TypeScriptParserMixin.parseSubscripts (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:11094:19)
+    at TypeScriptParserMixin.parseExprSubscripts (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:11085:17)
+    at TypeScriptParserMixin.parseUpdate (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:11066:21)
+    at TypeScriptParserMixin.parseMaybeUnary (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:11046:23)
+    at TypeScriptParserMixin.parseMaybeUnary (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:9837:18)
+    at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:10899:61)
+    at TypeScriptParserMixin.parseExprOps (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:10904:23)
+    at TypeScriptParserMixin.parseMaybeConditional (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:10881:23)
+    at TypeScriptParserMixin.parseMaybeAssign (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:10831:21)
+    at TypeScriptParserMixin.parseMaybeAssign (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:9786:20)
+    at TypeScriptParserMixin.parseExpressionBase (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:10784:23)
+    at D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:10780:39
+    at TypeScriptParserMixin.allowInAnd (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12421:16)
+    at TypeScriptParserMixin.parseExpression (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:10780:17)
+    at TypeScriptParserMixin.parseStatementContent (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12895:23)
     at TypeScriptParserMixin.parseStatementContent (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:9508:18)
     at TypeScriptParserMixin.parseStatementLike (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12767:17)
-    at TypeScriptParserMixin.parseStatementOrSloppyAnnexBFunctionDeclaration (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12757:17)
-    at TypeScriptParserMixin.parseIfStatement (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:13130:28)
-    at TypeScriptParserMixin.parseStatementContent (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12796:21)
+    at TypeScriptParserMixin.parseStatementListItem (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12747:17)
+    at TypeScriptParserMixin.parseBlockOrModuleBlockBody (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:13316:61)
+    at TypeScriptParserMixin.parseBlockBody (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:13309:10)
+    at TypeScriptParserMixin.parseBlock (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:13297:10)
+    at TypeScriptParserMixin.parseFunctionBody (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12100:24)
+    at TypeScriptParserMixin.parseFunctionBodyAndFinish (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12086:10)
+    at TypeScriptParserMixin.parseFunctionBodyAndFinish (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:9172:18)
+    at D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:13445:12
+    at TypeScriptParserMixin.withSmartMixTopicForbiddingContext (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12403:14)
+    at TypeScriptParserMixin.parseFunction (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:13444:10)
+    at TypeScriptParserMixin.parseFunctionStatement (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:13125:17)
+    at TypeScriptParserMixin.parseStatementContent (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12791:21)
+    at TypeScriptParserMixin.parseStatementContent (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:9508:18)
+    at TypeScriptParserMixin.parseStatementLike (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12767:17)
+    at TypeScriptParserMixin.parseStatementListItem (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12747:17)
+    at TypeScriptParserMixin.parseExportDeclaration (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:13934:17)
+    at TypeScriptParserMixin.parseExportDeclaration (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:9629:85)
+    at TypeScriptParserMixin.maybeParseExportDeclaration (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:13893:31)
+    at TypeScriptParserMixin.parseExport (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:13812:29)
+    at TypeScriptParserMixin.parseExport (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:9385:20)
+    at TypeScriptParserMixin.parseStatementContent (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12878:27)
     at TypeScriptParserMixin.parseStatementContent (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:9508:18)
     at TypeScriptParserMixin.parseStatementLike (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12767:17)
     at TypeScriptParserMixin.parseModuleItem (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12744:17)
     at TypeScriptParserMixin.parseBlockOrModuleBlockBody (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:13316:36)
-    at TypeScriptParserMixin.parseBlockBody (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:13309:10)
-    at TypeScriptParserMixin.parseProgram (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12622:10)
-    at TypeScriptParserMixin.parseTopLevel (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:12612:25)
-    at TypeScriptParserMixin.parse (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:14488:25)
-    at TypeScriptParserMixin.parse (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:10126:18)
-    at parse (D:\Gawe\AI\endfield\node_modules\@babel\parser\lib\index.js:14522:38)
-    at parser (D:\Gawe\AI\endfield\node_modules\@babel\core\lib\parser\index.js:41:34)
-    at parser.next (<anonymous>)
-    at normalizeFile (D:\Gawe\AI\endfield\node_modules\@babel\core\lib\transformation\normalize-file.js:64:37)
-    at normalizeFile.next (<anonymous>)
-    at run (D:\Gawe\AI\endfield\node_modules\@babel\core\lib\transformation\index.js:22:50)
-    at run.next (<anonymous>)
-    at transform (D:\Gawe\AI\endfield\node_modules\@babel\core\lib\transform.js:22:33)
-    at transform.next (<anonymous>)
-    at step (D:\Gawe\AI\endfield\node_modules\gensync\index.js:261:32)
-    at D:\Gawe\AI\endfield\node_modules\gensync\index.js:273:13
-    at async.call.result.err.err (D:\Gawe\AI\endfield\node_modules\gensync\index.js:223:11)
-    at D:\Gawe\AI\endfield\node_modules\gensync\index.js:189:28
-    at D:\Gawe\AI\endfield\node_modules\@babel\core\lib\gensync-utils\async.js:67:7
-    at D:\Gawe\AI\endfield\node_modules\gensync\index.js:113:33
-    at step (D:\Gawe\AI\endfield\node_modules\gensync\index.js:287:14)
-    at D:\Gawe\AI\endfield\node_modules\gensync\index.js:273:13
-    at async.call.result.err.err (D:\Gawe\AI\endfield\node_modules\gensync\index.js:223:11)
 Click outside, press Esc key, or fix the code to dismiss.
-You can also disable this overlay by setting server.hmr.overlay to false in vite.config.ts.

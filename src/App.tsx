@@ -255,6 +255,8 @@ export default function App() {
   const [isFacilitiesPanelOpen, setIsFacilitiesPanelOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
+  const [dragState, setDragState] = useState<{ id: string | null, icon: string | null, x: number, y: number }>({ id: null, icon: null, x: 0, y: 0 });
+
   useEffect(() => {
     invoke("get_app_data").then((data: any) => {
       setAppData(data);
@@ -265,9 +267,30 @@ export default function App() {
         });
       }
     });
+
     const interval = setInterval(() => {
       invoke("get_power_status").then(setPowerStatus);
     }, 1000);
+
+    // Global Drag Events
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (dragState.id) {
+        setDragState(prev => ({ ...prev, x: e.clientX, y: e.clientY }));
+      }
+    };
+
+    // Note: MouseUp is mainly for cancelling if not handled by a specific drop zone,
+    // or we can rely on the Drop Zone to fire mouseup first?
+    // Actually, we want the drop zone to handle it. 
+    // But if we drop outside, we need to cancel.
+    const handleGlobalMouseUp = () => {
+      if (dragState.id) {
+        setDragState({ id: null, icon: null, x: 0, y: 0 });
+      }
+    };
+
+    window.addEventListener("mousemove", handleGlobalMouseMove);
+    window.addEventListener("mouseup", handleGlobalMouseUp);
 
     // Close menus on global click
     const closeMenu = () => setActiveMenu(null);
@@ -276,8 +299,25 @@ export default function App() {
     return () => {
       clearInterval(interval);
       window.removeEventListener("click", closeMenu);
+      window.removeEventListener("mousemove", handleGlobalMouseMove);
+      window.removeEventListener("mouseup", handleGlobalMouseUp);
     };
-  }, []);
+  }, [dragState.id]);
+  // Dependency on dragState.id is important for the closure in handleGlobalMouseMove if we used state directly, 
+  // but setState callback form is safe. 
+  // However, handleGlobalMouseUp reads dragState.id. So, we need it in dependency or use a ref.
+  // Ideally, use ref for current drag state to avoid re-binding listeners constantly, but checking ID in setState callback is tricky for "reading" it.
+  // Simpler to just re-bind listeners when drag state ID changes (dragging starts/stops).
+
+  const handleDragStart = (e: React.MouseEvent, facility: any) => {
+    e.preventDefault();
+    setDragState({
+      id: facility.id,
+      icon: facility.icon,
+      x: e.clientX,
+      y: e.clientY
+    });
+  };
 
   const handleConfigChange = (updates: Record<string, any>) => {
     if (!appData) return;
@@ -432,16 +472,18 @@ export default function App() {
                 appData.facilities.map((f: any) => (
                   <div
                     key={f.id}
-                    className="flex items-center gap-3 p-2 hover:bg-[#0078d7] hover:text-white rounded-sm cursor-pointer group transition-all border border-transparent hover:border-white/10"
+                    onMouseDown={(e) => handleDragStart(e, f)}
+                    className="flex items-center gap-3 p-2 hover:bg-[#0078d7] hover:text-white rounded-sm cursor-grab active:cursor-grabbing group transition-all border border-transparent hover:border-white/10"
                     onClick={() => {
                       // In a real app, this might select the sub-tool/brush
                       // For now just logging or keeping selection
+                      setActiveTool("facility");
                     }}
                   >
-                    <div className="w-8 h-8 rounded bg-[#2b2b2b] p-1 flex items-center justify-center border border-white/5 group-hover:border-white/20 group-hover:bg-white/10 shrink-0">
+                    <div className="w-8 h-8 rounded bg-[#2b2b2b] p-1 flex items-center justify-center border border-white/5 group-hover:border-white/20 group-hover:bg-white/10 shrink-0 pointer-events-none">
                       <img src={f.icon} alt={f.name} className="max-w-full max-h-full opacity-90 group-hover:opacity-100" />
                     </div>
-                    <div className="flex flex-col min-w-0">
+                    <div className="flex flex-col min-w-0 pointer-events-none">
                       <span className="text-[0.85em] font-bold leading-tight decoration-clone truncate">{f.name}</span>
                       <span className="text-[0.7em] opacity-40 group-hover:opacity-80">{f.width}x{f.height}</span>
                     </div>
@@ -461,7 +503,7 @@ export default function App() {
             <div className="flex-1 h-full bg-[#1e1e1e]" />
           </div>
           <div className="flex-1 relative bg-[#1e1e1e]">
-            <Viewport appData={appData} />
+            <Viewport appData={appData} draggedFacilityId={dragState.id} />
           </div>
         </main>
 
@@ -581,6 +623,23 @@ export default function App() {
         config={appData?.config}
         onConfigChange={handleConfigChange}
       />
+
+      {/* Custom Drag Ghost */}
+      {dragState.id && (
+        <div
+          className="fixed pointer-events-none z-[100] opacity-80"
+          style={{
+            left: dragState.x,
+            top: dragState.y,
+            transform: 'translate(-50%, -50%)'
+          }}
+        >
+          <div className="bg-[#0078d7] p-2 rounded shadow-xl flex items-center gap-2 text-white border border-white/20">
+            {dragState.icon && <img src={dragState.icon} className="w-6 h-6 bg-black/20 rounded-sm" />}
+            <span className="font-bold text-sm">Placing Facility</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
