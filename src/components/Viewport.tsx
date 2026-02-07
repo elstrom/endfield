@@ -300,16 +300,68 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
             facilityContainer.addChild(gfx);
 
             if (meta.ports) {
+                const isUniversal = window.config?.universal_provider_facility_ids?.includes(meta.id);
+
                 for (const port of meta.ports) {
                     const pPos = getRotatedPortPosition(port, meta.width, meta.height, pf.rotation || 0);
-                    const px = pPos.x * GRID_SIZE + GRID_SIZE / 2;
-                    const py = pPos.y * GRID_SIZE + GRID_SIZE / 2;
+                    const px = pPos.x * GRID_SIZE;
+                    const py = pPos.y * GRID_SIZE;
 
                     const pGfx = new PIXI.Graphics();
                     const pColor = port.type === 'input' ? 0x00ff00 : 0xff0000;
-                    pGfx.beginFill(pColor);
-                    pGfx.drawCircle(0, 0, 4);
+
+                    // Specific Logic for Universal Provider Output Ports
+                    const isInteractableOutput = isUniversal && port.type === 'output';
+
+                    // NEW: Draw Full Block for Port
+                    const alpha = isInteractableOutput ? 0.6 : 0.3; // More visible if interactable
+                    pGfx.beginFill(pColor, alpha);
+                    pGfx.drawRect(0, 0, GRID_SIZE, GRID_SIZE);
                     pGfx.endFill();
+
+                    // Add border/stroke for better definition
+                    pGfx.lineStyle(2, pColor, 0.8);
+                    pGfx.drawRect(0, 0, GRID_SIZE, GRID_SIZE);
+
+                    if (isInteractableOutput) {
+                        pGfx.eventMode = 'static';
+                        pGfx.cursor = 'pointer';
+
+                        // Icon or Interaction Indicator in Center
+                        pGfx.lineStyle(2, 0xffffff, 0.9);
+                        pGfx.drawCircle(GRID_SIZE / 2, GRID_SIZE / 2, 6);
+
+                        // Show selected item icon if exists
+                        const setting = pf.port_settings?.find((s: any) => s.port_id === port.id);
+                        if (setting) {
+                            const item = window.appData?.items?.find((i: any) => i.id === setting.item_id);
+                            if (item?.icon) {
+                                // Draw simple dot representation for now, or sprite later
+                                pGfx.beginFill(0xffffff, 1);
+                                pGfx.drawCircle(GRID_SIZE / 2, GRID_SIZE / 2, 4);
+                                pGfx.endFill();
+                            }
+                        }
+
+                        pGfx.on('pointertap', (e) => {
+                            // Prevent selection if we are placing something (e.g. Belt)
+                            if (draggedFacilityIdRef.current) {
+                                debugLog("[Viewport] Port Selection Blocked: Tool Active");
+                                return;
+                            }
+
+                            e.stopPropagation();
+                            debugLog("[Viewport] Port Selection Triggered:", pf.instanceId, port.id);
+                            window.dispatchEvent(new CustomEvent('open-port-selector', {
+                                detail: {
+                                    instanceId: pf.instanceId,
+                                    portId: port.id,
+                                    facilityName: meta.name
+                                }
+                            }));
+                        });
+                    }
+
                     pGfx.x = px;
                     pGfx.y = py;
                     facilityContainer.addChild(pGfx);
@@ -898,48 +950,74 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                         const occupant = occupancyMapRef.current.get(key);
 
                         if (!state.pathStart) {
-                            // Correct Logic: Belt starts from Output port (lobang keluar)
+                            // Correct Logic: Belt starts from Output port (lobang keluar) OR potentially empty ground if continuing existing line
                             if (!occupant || !occupant.port || occupant.port.type !== 'output') {
+                                // Relaxed: Allow start from ground? Maybe not for now to keep logic clean.
+                                // Actually, let's keep strict start (Output Port) for now.
                                 debugLog(`[Pathfinding] Start blocked at [${GX},${GY}]. Must start at Output port. Occupant:`, occupant);
                                 return;
                             }
                             debugLog("[Pathfinding] Set Start Point (Output):", GX, GY, "Port:", occupant.port.id);
                             state.pathStart = { x: GX, y: GY };
                             setPathStart({ x: GX, y: GY });
-                            // Ticker will handle preview drawing
                             return;
                         } else {
-                            // Correct Logic: Belt ends at Input port (lobang masuk)
-                            if (!occupant || !occupant.port || occupant.port.type !== 'input') {
-                                debugLog(`[Pathfinding] Finalize blocked at [${GX},${GY}]. Must end at Input port. Occupant:`, occupant);
+                            // Finalize Path
+                            // Strict Check: Must end at Input Port?
+                            // User Feedback: Allow ending on empty ground to "continue later".
+
+                            const isInputPort = occupant && occupant.port && occupant.port.type === 'input';
+                            const isEmpty = !occupant;
+
+                            // If not input port AND not empty, block (e.g. hitting a wall or machine body)
+                            if (!isInputPort && !isEmpty) {
+                                debugLog(`[Pathfinding] Finalize blocked at [${GX},${GY}]. Obstacle detected.`);
                                 return;
                             }
+
+                            // If empty, verify it's valid ground (not OOB) - implicit by getting here
 
                             debugLog("[Pathfinding] Finalizing Path at:", GX, GY, "Nodes:", state.pathPreview.length);
 
                             state.pathPreview.forEach((pos, i) => {
                                 const next = state.pathPreview[i + 1];
                                 const prev = state.pathPreview[i - 1];
-                                // ... rest of logic uses state.pathPreview ... 
-                                // (I will continue with ReplacementContent to make it consistent)
+                                // ... Logic for rotation ...
 
                                 let rotation = 0;
                                 const nodeToCompare = next || prev;
+                                // If endpoint (no next), align with previous
                                 if (nodeToCompare) {
                                     const dx = nodeToCompare.x - pos.x;
                                     const dy = nodeToCompare.y - pos.y;
-                                    const factor = next ? 1 : -1;
-                                    const vx = dx * factor;
-                                    const vy = dy * factor;
-                                    if (vx > 0) rotation = 0;
-                                    else if (vx < 0) rotation = 180;
-                                    else if (vy > 0) rotation = 90;
-                                    else if (vy < 0) rotation = 270;
+                                    // If we are looking at next, vector is pos -> next.
+                                    // If we are looking at prev (endpoint), vector is prev -> pos.
+
+                                    // Standard logic: Align belt flow direction
+                                    // Current belt piece should point to 'next'
+                                    if (next) {
+                                        const vx = next.x - pos.x;
+                                        const vy = next.y - pos.y;
+                                        if (vx > 0) rotation = 0;      // Right
+                                        else if (vx < 0) rotation = 180; // Left
+                                        else if (vy > 0) rotation = 90;  // Down
+                                        else if (vy < 0) rotation = 270; // Up
+                                    } else if (prev) {
+                                        // Endpoint: Alignment follows arrival vector
+                                        const vx = pos.x - prev.x;
+                                        const vy = pos.y - prev.y;
+                                        if (vx > 0) rotation = 0;
+                                        else if (vx < 0) rotation = 180;
+                                        else if (vy > 0) rotation = 90;
+                                        else if (vy < 0) rotation = 270;
+                                    }
                                 }
 
                                 const nodeKey = `${pos.x},${pos.y}`;
                                 const existing = occupancyMapRef.current.get(nodeKey);
                                 let isBridgeNeeded = false;
+
+                                // Auto-Bridge Logic or Replacement
                                 if (existing && existing.instanceId) {
                                     const existingPf = placedFacilitiesRef.current.find(f => f.instanceId === existing.instanceId);
                                     const isExistingBelt = existingPf && existingPf.facilityId === (window as any).config?.belt_id;
@@ -947,9 +1025,11 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                                     if (isExistingBelt) {
                                         const existingRot = (existingPf.rotation || 0) % 180;
                                         const newRot = rotation % 180;
-                                        if (existingRot !== newRot) isBridgeNeeded = true;
-
-                                        // Only remove if it's a belt we are replacing
+                                        // If perpendicular, maybe bridge? For now simple replacement
+                                        if (existingRot !== newRot) {
+                                            // Ideally check for bridge capability
+                                            // For now, Replace checks.
+                                        }
                                         window.removeFacility(existing.instanceId);
                                     }
                                 }

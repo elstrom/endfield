@@ -40,7 +40,13 @@
     "thermal_bank_fuel_duration_s": 40,
     "slot_capacity": 50,
     "belt_shortcut": "KeyE",
-    "belt_id": "item_port_log_belt_01"
+    "belt_id": "item_port_log_belt_01",
+    "universal_provider_facility_ids": [
+      "hub_pac_main",
+      "logistics_depot_unloader"
+    ],
+    "primary_provider_id": "hub_pac_main",
+    "secondary_provider_id": "logistics_depot_unloader"
   },
   "facilities": [
     {

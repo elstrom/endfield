@@ -145,7 +145,54 @@ impl RecipeSolver {
             temp_processed.insert(item_id);
         }
 
-        // 2. Validate Constraints (The "Bottleneck" Check)
+        // 2. Allocate Raw Materials to Universal Providers
+        let provider_ids: Vec<String> = config["universal_provider_facility_ids"]
+            .as_array()
+            .map(|a| a.iter().filter_map(|v| v.as_str()).map(|s| s.to_string()).collect())
+            .unwrap_or_else(|| vec!["hub_pac_main".to_string(), "logistics_depot_unloader".to_string()]);
+        
+        let primary_provider_id = config["primary_provider_id"].as_str().unwrap_or("hub_pac_main").to_string();
+        let secondary_provider_id = config["secondary_provider_id"].as_str().unwrap_or("logistics_depot_unloader").to_string();
+        let flow_rate_per_s = config["logistics_flow_rate_units_per_s"].as_f64().unwrap_or(0.5);
+        let rate_per_port = flow_rate_per_s * 60.0;
+
+        let total_raw_demand: f64 = raw_materials.values().sum();
+        
+        if total_raw_demand > 0.0 {
+            // Get PAC info for capacity check
+            let pac_meta = self.facilities.get(&primary_provider_id);
+            let pac_ports = pac_meta.map(|f| f.ports.as_ref().map(|p| p.iter().filter(|port| port.port_type == "output").count()).unwrap_or(0)).unwrap_or(6) as f64;
+            let pac_capacity = pac_ports * rate_per_port;
+
+            // Always add 1 PAC if there's raw demand
+            if let Some(pac) = pac_meta {
+                required_facilities.push(FacilityRequirement {
+                    facility_id: primary_provider_id.clone(),
+                    facility_type: pac.name.clone(),
+                    count: 1.0,
+                    recipe_id: "universal_source_allocation".to_string(),
+                });
+            }
+
+            // If PAC capacity is exceeded, add Unloaders
+            if total_raw_demand > pac_capacity {
+                let overflow = total_raw_demand - pac_capacity;
+                let unloader_meta = self.facilities.get(&secondary_provider_id);
+                let unloader_ports = unloader_meta.map(|f| f.ports.as_ref().map(|p| p.iter().filter(|port| port.port_type == "output").count()).unwrap_or(1)).unwrap_or(1) as f64;
+                let unloader_count = (overflow / (unloader_ports * rate_per_port)).ceil();
+
+                if let Some(unloader) = unloader_meta {
+                    required_facilities.push(FacilityRequirement {
+                        facility_id: secondary_provider_id.clone(),
+                        facility_type: unloader.name.clone(),
+                        count: unloader_count,
+                        recipe_id: "universal_source_allocation".to_string(),
+                    });
+                }
+            }
+        }
+
+        // 3. Validate Constraints (The "Bottleneck" Check)
         let total_area_blocks = (plate_width * plate_height) as f64;
         let max_usable_area = total_area_blocks * usable_area_ratio;
         

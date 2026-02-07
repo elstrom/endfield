@@ -30,10 +30,17 @@ pub struct Facility {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PortSetting {
+    pub port_id: String,
+    pub item_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PlacedFacility {
     pub instance_id: String,
     pub facility_id: String,
     pub x: i32,
     pub y: i32,
     pub rotation: u32, // 0, 90, 180, 270
+    pub port_settings: Option<Vec<PortSetting>>,
 }

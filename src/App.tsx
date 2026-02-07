@@ -3,7 +3,7 @@ import { Viewport } from "./components/Viewport";
 import {
   Menu, Box, Link2, MousePointer2, Move, Eraser,
   ChevronDown, ChevronRight, X, Info, Check, PlusCircle, Zap, Cpu,
-  Maximize2, Filter, Activity, CircleDot, Trash2
+  Maximize2, Filter, Activity, CircleDot, Trash2, Search
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { clsx, type ClassValue } from "clsx";
@@ -240,6 +240,14 @@ export default function App() {
   const [activeFacilityId, setActiveFacilityId] = useState<string | null>(null); // NEW: Track selected facility
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
+  // Port Selector Modal State
+  const [portSelector, setPortSelector] = useState<{
+    isOpen: boolean,
+    instanceId: string | null,
+    portId: string | null,
+    facilityName: string | null
+  }>({ isOpen: false, instanceId: null, portId: null, facilityName: null });
+
   const [dragState, setDragState] = useState<{ id: string | null, icon: string | null, x: number, y: number }>({ id: null, icon: null, x: 0, y: 0 });
   const mousePos = useRef({ x: 0, y: 0 });
   const appDataRef = useRef<any>(null);
@@ -300,8 +308,18 @@ export default function App() {
       }
     };
 
+    const handlePortSelectorOpen = (e: any) => {
+      setPortSelector({
+        isOpen: true,
+        instanceId: e.detail.instanceId,
+        portId: e.detail.portId,
+        facilityName: e.detail.facilityName
+      });
+    };
+
     window.addEventListener("mousemove", handleGlobalMouseMove);
     window.addEventListener("keydown", handleGlobalKeyDown);
+    window.addEventListener("open-port-selector", handlePortSelectorOpen);
 
     const closeMenu = () => setActiveMenu(null);
     window.addEventListener("click", closeMenu);
@@ -329,6 +347,7 @@ export default function App() {
       window.removeEventListener('mouse-grid-update', handleMouseGrid);
       window.removeEventListener('facility-selected', handleFacilitySelected);
       window.removeEventListener("keydown", handleGlobalKeyDown);
+      window.removeEventListener("open-port-selector", handlePortSelectorOpen);
       delete (window as any).updateFooterCoord;
     };
   }, [dragState.id]); // Removed appData from dependencies
@@ -354,6 +373,22 @@ export default function App() {
     const newData = { ...appData, config: newConfig };
     setAppData(newData);
     invoke("update_config", { config: newConfig });
+  };
+
+  const handlePortItemSelect = (itemId: string) => {
+    if (!portSelector.instanceId || !portSelector.portId) return;
+
+    const pf = (window as any).placedFacilities?.find((f: any) => f.instanceId === portSelector.instanceId);
+    if (pf) {
+      const currentSettings = pf.port_settings || [];
+      const otherSettings = currentSettings.filter((s: any) => s.port_id !== portSelector.portId);
+      const newSettings = [...otherSettings, { port_id: portSelector.portId, item_id: itemId }];
+
+      (window as any).updateFacility(portSelector.instanceId, { port_settings: newSettings });
+
+      // Close modal
+      setPortSelector(prev => ({ ...prev, isOpen: false }));
+    }
   };
 
   const theme = appData?.config?.theme || {
@@ -737,7 +772,7 @@ export default function App() {
                       )}
 
                       {/* RECIPES SECTION */}
-                      {recipes.length > 0 && (
+                      {recipes.length > 0 ? (
                         <div className="space-y-[0.5em]">
                           <div className="text-[0.75em] opacity-50 uppercase font-bold tracking-wider border-b border-white/10 pb-1">Compatible Recipes</div>
                           <div className="grid gap-[0.5em]">
@@ -802,6 +837,25 @@ export default function App() {
                             ))}
                           </div>
                         </div>
+                      ) : (
+                        appData?.config?.universal_provider_facility_ids?.includes(meta.id) && (
+                          <div className="space-y-[0.8em] animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div className="text-[0.75em] text-emerald-400 uppercase font-bold tracking-wider border-b border-emerald-500/20 pb-1 flex items-center gap-2">
+                              <Activity size={12} /> Universal Item Emitter
+                            </div>
+                            <div className="bg-emerald-500/5 border border-emerald-500/10 p-[1.2em] rounded-md text-[0.85em] leading-relaxed text-emerald-200/70 italic">
+                              This facility acts as a primary entry point for all raw materials and logistics throughput. It can emit any item selected in the logistics configuration without requiring a local recipe.
+                            </div>
+                            <div className="grid grid-cols-5 gap-2 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
+                              {appData?.items?.filter((i: any) => i.is_raw).slice(0, 5).map((i: any) => (
+                                <div key={i.id} className="aspect-square bg-[#1a1a1a] border border-[#333] rounded p-1.5 flex items-center justify-center" title={i.name}>
+                                  <img src={i.icon} className="max-w-full max-h-full" />
+                                </div>
+                              ))}
+                              <div className="aspect-square bg-white/5 border border-white/5 rounded flex items-center justify-center text-[1.2em] font-bold text-white/20">...</div>
+                            </div>
+                          </div>
+                        )
                       )}
                     </div>
                   </div>
@@ -842,6 +896,96 @@ export default function App() {
           </div>
         </div>
       )}
+      {/* PORT SELECTOR MODAL */}
+      <PortSelectorModal
+        isOpen={portSelector.isOpen}
+        onClose={() => setPortSelector(prev => ({ ...prev, isOpen: false }))}
+        onSelect={handlePortItemSelect}
+        appData={appData}
+        facilityName={portSelector.facilityName}
+        portId={portSelector.portId}
+      />
+    </div>
+  );
+}
+
+function PortSelectorModal({ isOpen, onClose, onSelect, appData, facilityName, portId }: any) {
+  const [search, setSearch] = useState("");
+  if (!isOpen) return null;
+
+  const filteredItems = appData?.items?.filter((i: any) =>
+    i.name.toLowerCase().includes(search.toLowerCase()) ||
+    i.id.toLowerCase().includes(search.toLowerCase())
+  ) || [];
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-[2em]">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
+      <div className="relative w-full max-w-[50em] bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in fade-in zoom-in duration-200">
+        {/* Header */}
+        <div className="p-[1.5em] border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-emerald-500/10 to-transparent">
+          <div className="flex items-center gap-4">
+            <div className="w-[3em] h-[3em] bg-emerald-500/20 rounded-lg flex items-center justify-center text-emerald-400">
+              <Activity size={24} />
+            </div>
+            <div>
+              <h2 className="text-[1.2em] font-bold text-white uppercase tracking-wider">Configure Logistics Output</h2>
+              <p className="text-[0.8em] text-white/40">{facilityName} • Port: {portId}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-[1.5em] space-y-[1.5em] overflow-hidden flex flex-col flex-1">
+          {/* Search */}
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-emerald-440 transition-colors" size={18} />
+            <input
+              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search items by name or ID..."
+              className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-12 pr-4 text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all font-medium"
+            />
+          </div>
+
+          {/* Grid */}
+          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+              {filteredItems.map((item: any) => (
+                <button
+                  key={item.id}
+                  onClick={() => onSelect(item.id)}
+                  title={item.name}
+                  className="aspect-square bg-[#222] border border-white/5 rounded-lg flex flex-col items-center justify-center p-2 hover:bg-[#2a2a2a] hover:border-emerald-500/40 hover:scale-105 transition-all group relative"
+                >
+                  {item.icon ? (
+                    <img src={item.icon} className="max-w-[70%] max-h-[70%] drop-shadow-lg group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                  ) : (
+                    <div className="text-white/20 text-xs">?</div>
+                  )}
+                  <div className="absolute inset-0 border-2 border-emerald-500/0 group-hover:border-emerald-500/20 rounded-lg pointer-events-none" />
+                </button>
+              ))}
+            </div>
+
+            {filteredItems.length === 0 && (
+              <div className="h-[20em] flex flex-col items-center justify-center text-white/20 space-y-4">
+                <Search size={48} className="opacity-20" />
+                <p className="font-bold uppercase tracking-widest text-[0.9em]">No items found</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-[1em] bg-black/20 border-t border-white/5 text-center">
+          <p className="text-[0.7em] text-white/20 uppercase tracking-[0.2em]">Select an item to assign to this output port</p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -8,6 +8,7 @@ export interface PlacedFacility {
     x: number;
     y: number;
     rotation: number;
+    port_settings?: { port_id: string, item_id: string }[];
 }
 
 export interface LogisticsEdge {
@@ -32,7 +33,8 @@ export function useSandbox(appData?: any) {
                 facility_id: f.facilityId,
                 x: Math.floor(f.x / GRID_SIZE),
                 y: Math.floor(f.y / GRID_SIZE),
-                rotation: f.rotation
+                rotation: f.rotation,
+                port_settings: f.port_settings || []
             })),
             edges: edges.map(e => ({
                 from_instance_id: e.fromId,
