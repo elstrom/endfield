@@ -38,7 +38,9 @@
     "electric_pylon_distribution_range_m": 30,
     "thermal_bank_generation_mw": 220,
     "thermal_bank_fuel_duration_s": 40,
-    "slot_capacity": 50
+    "slot_capacity": 50,
+    "belt_shortcut": "KeyE",
+    "belt_id": "item_port_log_belt_01"
   },
   "facilities": [
     {

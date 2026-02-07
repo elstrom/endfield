@@ -18,8 +18,8 @@ export interface LogisticsEdge {
 export function useSandbox() {
     const [placedFacilities, setPlacedFacilities] = useState<PlacedFacility[]>([]);
     const [edges, setEdges] = useState<LogisticsEdge[]>([]);
-    // Occupany Map: Key="x,y", Value=InstanceID
-    const [occupancyMap, setOccupancyMap] = useState<Map<string, string>>(new Map());
+    // Occupany Map: Key="x,y", Value={ instanceId, port? }
+    const [occupancyMap, setOccupancyMap] = useState<Map<string, any>>(new Map());
     const [movingFacilityId, setMovingFacilityId] = useState<string | null>(null);
 
     // Sync to Rust Backend
@@ -56,12 +56,11 @@ export function useSandbox() {
         for (let ix = 0; ix < w; ix++) {
             for (let iy = 0; iy < h; iy++) {
                 const key = `${startX + ix},${startY + iy}`;
-                const occupantId = occupancyMap.get(key);
+                const occupant = occupancyMap.get(key);
+                const occupantId = occupant && typeof occupant === 'object' ? occupant.instanceId : occupant;
 
                 // If cell is occupied AND it's not the one we are currently moving
                 if (occupantId && occupantId !== movingFacilityId) {
-                    // Reduce spam
-                    // debugLog(`[Collision] Blocked by ${occupantId} at grid ${key}`);
                     return true;
                 }
             }
@@ -84,7 +83,7 @@ export function useSandbox() {
     // Rebuild Occupancy Map whenever placedFacilities change
     useEffect(() => {
         const GRID_SIZE = window.config?.grid_size || 64;
-        const newMap = new Map<string, string>();
+        const newMap = new Map<string, any>();
         const appData = (window as any).appData;
 
         if (!appData?.facilities) return;
@@ -95,14 +94,40 @@ export function useSandbox() {
 
             const startX = Math.floor(pf.x / GRID_SIZE);
             const startY = Math.floor(pf.y / GRID_SIZE);
-            const isRotated = (pf.rotation || 0) % 180 === 90;
+            const rot = pf.rotation || 0;
+            const isRotated = rot % 180 === 90;
             const w = isRotated ? (meta.height || 1) : (meta.width || 1);
             const h = isRotated ? (meta.width || 1) : (meta.height || 1);
 
+            // 1. Fill Footprint
             for (let x = 0; x < w; x++) {
                 for (let y = 0; y < h; y++) {
-                    newMap.set(`${startX + x},${startY + y}`, pf.instanceId);
+                    newMap.set(`${startX + x},${startY + y}`, { instanceId: pf.instanceId });
                 }
+            }
+
+            // 2. Map Ports specifically
+            if (meta.ports) {
+                meta.ports.forEach((port: any) => {
+                    // Calculate rotated port position
+                    let px = port.x;
+                    let py = port.y;
+                    const r = rot % 360;
+
+                    if (r === 90) { px = (meta.height || 1) - 1 - port.y; py = port.x; }
+                    else if (r === 180) { px = (meta.width || 1) - 1 - port.x; py = (meta.height || 1) - 1 - port.y; }
+                    else if (r === 270) { px = port.y; py = (meta.width || 1) - 1 - port.x; }
+
+                    const key = `${startX + px},${startY + py}`;
+                    newMap.set(key, {
+                        instanceId: pf.instanceId,
+                        port: {
+                            id: port.id,
+                            type: port.type,
+                            direction: port.direction
+                        }
+                    });
+                });
             }
         });
         setOccupancyMap(newMap);

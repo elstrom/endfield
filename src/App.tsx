@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Viewport } from "./components/Viewport";
 import {
   Menu, Box, Link2, MousePointer2, Move, Eraser,
@@ -8,6 +8,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { debugLog } from "./utils/logger";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -240,15 +241,19 @@ export default function App() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
   const [dragState, setDragState] = useState<{ id: string | null, icon: string | null, x: number, y: number }>({ id: null, icon: null, x: 0, y: 0 });
+  const mousePos = useRef({ x: 0, y: 0 });
+  const appDataRef = useRef<any>(null);
+
   const clearDragState = () => {
-    console.log("App: clearDragState called");
+    debugLog("App: clearDragState called");
     setDragState({ id: null, icon: null, x: 0, y: 0 });
   };
 
+  // 1. Initial Data Load
   useEffect(() => {
-    (window as any).clearDragState = clearDragState;
     invoke("get_app_data").then((data: any) => {
       setAppData(data);
+      appDataRef.current = data;
       if (data?.config) {
         setTempSize({
           x: String(data.config.world_size_tiles_x || 32),
@@ -256,32 +261,48 @@ export default function App() {
         });
       }
     });
+  }, []);
+
+  // 2. Event Listeners & Timers
+  useEffect(() => {
+    (window as any).clearDragState = clearDragState;
+    appDataRef.current = appData; // Keep ref in sync
 
     const interval = setInterval(() => {
       invoke("get_power_status").then(setPowerStatus);
     }, 1000);
 
-    // Global Drag Events
     const handleGlobalMouseMove = (e: MouseEvent) => {
+      mousePos.current = { x: e.clientX, y: e.clientY };
       if (dragState.id) {
         setDragState(prev => ({ ...prev, x: e.clientX, y: e.clientY }));
       }
     };
 
-    // Note: MouseUp is mainly for cancelling if not handled by a specific drop zone,
-    // or we can rely on the Drop Zone to fire mouseup first?
-    // Actually, we want the drop zone to handle it. 
-    // But if we drop outside, we need to cancel.
-    const handleGlobalMouseUp = () => {
-      if (dragState.id) {
-        setDragState({ id: null, icon: null, x: 0, y: 0 });
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement).tagName === "INPUT") return;
+
+      const currentData = appDataRef.current;
+      const config = currentData?.config;
+      if (config && e.code === config.belt_shortcut && currentData.facilities) {
+        const belt = currentData.facilities.find((f: any) => f.id === config.belt_id);
+        if (belt) {
+          debugLog("[Shortcut] Key detected:", e.code, "activating belt:", belt.id);
+          setDragState({
+            id: belt.id,
+            icon: belt.icon,
+            x: mousePos.current.x,
+            y: mousePos.current.y
+          });
+          setActiveTool("logistics");
+          debugLog("[Shortcut] Goal Print: Belt placement shortcut triggered successfully");
+        }
       }
     };
 
     window.addEventListener("mousemove", handleGlobalMouseMove);
-    // window.addEventListener("mouseup", handleGlobalMouseUp); // DISABLED: Viewport now handles drop -> clear flow
+    window.addEventListener("keydown", handleGlobalKeyDown);
 
-    // Close menus on global click
     const closeMenu = () => setActiveMenu(null);
     window.addEventListener("click", closeMenu);
 
@@ -296,7 +317,7 @@ export default function App() {
     window.addEventListener('mouse-grid-update', handleMouseGrid);
 
     const handleFacilitySelected = (e: any) => {
-      console.log("App: Facility Selected", e.detail.id);
+      debugLog("App: Facility Selected", e.detail.id);
       setActiveFacilityId(e.detail.id);
     };
     window.addEventListener('facility-selected', handleFacilitySelected);
@@ -305,12 +326,12 @@ export default function App() {
       clearInterval(interval);
       window.removeEventListener("click", closeMenu);
       window.removeEventListener("mousemove", handleGlobalMouseMove);
-      window.removeEventListener("mouseup", handleGlobalMouseUp);
       window.removeEventListener('mouse-grid-update', handleMouseGrid);
       window.removeEventListener('facility-selected', handleFacilitySelected);
+      window.removeEventListener("keydown", handleGlobalKeyDown);
       delete (window as any).updateFooterCoord;
     };
-  }, [dragState.id]);
+  }, [dragState.id]); // Removed appData from dependencies
   // Dependency on dragState.id is important for the closure in handleGlobalMouseMove if we used state directly, 
   // but setState callback form is safe. 
   // However, handleGlobalMouseUp reads dragState.id. So, we need it in dependency or use a ref.
