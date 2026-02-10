@@ -8,5 +8,6 @@ pub mod optimizer;
 pub mod power_grid;
 pub mod recipe_solver;
 pub mod layout_generator;
+pub mod logistics_engine; // NEW
 #[cfg(test)]
 pub mod recipe_solver_tests;

@@ -239,6 +239,7 @@ export default function App() {
   const [activeSidePanel, setActiveSidePanel] = useState<"facilities" | "logistics" | null>(null);
   const [activeFacilityId, setActiveFacilityId] = useState<string | null>(null); // NEW: Track selected facility
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [showRecipes, setShowRecipes] = useState(false);
 
   // Port Selector Modal State
   const [portSelector, setPortSelector] = useState<{
@@ -309,6 +310,7 @@ export default function App() {
     };
 
     const handlePortSelectorOpen = (e: any) => {
+      debugLog("[App] handlePortSelectorOpen event received:", e.detail);
       setPortSelector({
         isOpen: true,
         instanceId: e.detail.instanceId,
@@ -771,71 +773,142 @@ export default function App() {
                         </div>
                       )}
 
-                      {/* RECIPES SECTION */}
-                      {recipes.length > 0 ? (
-                        <div className="space-y-[0.5em]">
-                          <div className="text-[0.75em] opacity-50 uppercase font-bold tracking-wider border-b border-white/10 pb-1">Compatible Recipes</div>
-                          <div className="grid gap-[0.5em]">
-                            {recipes.map((r: any) => (
-                              <div key={r.id} className="bg-[#1e1e1e] border border-[#333] p-[1em] rounded-md flex items-center justify-between gap-[1em] hover:bg-[#252525] hover:border-white/10 transition-colors group">
-                                {/* Inputs */}
-                                <div className="flex items-center gap-[0.8em]">
-                                  {r.inputs.map((input: any, idx: number) => {
-                                    const item = getItem(input.item_id);
-                                    if (!item) console.warn("Missing item input:", input.item_id, "for recipe:", r.id);
-                                    return (
-                                      <div key={idx} className="relative group/item" title={item?.name || input.item_id}>
-                                        <div className="w-[3.5em] h-[3.5em] bg-[#2a2a2a] border border-[#444] rounded flex items-center justify-center p-1.5 shadow-sm group-hover/item:border-[#0078d7] transition-colors">
-                                          {item?.icon ? (
-                                            <img
-                                              src={item.icon}
-                                              className="max-w-full max-h-full drop-shadow-md"
-                                              onError={(e) => console.error("Image Load FAIL:", e.currentTarget.src)}
-                                            />
-                                          ) : (
-                                            <span className="text-red-500 text-xs">?</span>
-                                          )}
-                                        </div>
-                                        <div className="absolute -bottom-1.5 -right-1.5 bg-[#111] text-white text-[0.75em] font-bold font-mono px-1.5 py-0.5 rounded border border-[#333] shadow-md z-10">{input.amount}</div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
+                      {/* I/O STORAGE DISPLAY */}
+                      {(meta.input_slots > 0 || meta.output_slots > 0) && (
+                        <div className="space-y-[0.8em]">
+                          <div className="text-[0.75em] opacity-50 uppercase font-bold tracking-wider border-b border-white/10 pb-1">Storage & I/O Buffers</div>
+                          <div className="flex items-center justify-between gap-[2em] bg-black/20 p-4 rounded-lg border border-white/5">
+                            {/* Input Slots */}
+                            <div className="flex flex-col gap-3 flex-1">
+                              <span className="text-[0.65em] font-bold opacity-30 uppercase text-center">Inputs</span>
+                              <div className="flex gap-2 justify-center">
+                                {[...Array(meta.input_slots || 0)].map((_, i) => {
+                                  // Simplified: Show unique items in input_buffer as slots
+                                  const uniqueItems = Array.from(new Set(pf.input_buffer?.map((s: any) => s.item_id as string) || []));
+                                  const itemId = uniqueItems[i];
+                                  const item = (typeof itemId === 'string') ? getItem(itemId) : null;
+                                  const count = pf.input_buffer?.filter((s: any) => s.item_id === itemId).reduce((acc: number, s: any) => acc + (s.quantity || 1), 0) || 0;
+                                  const max = appData?.config?.slot_capacity || 50;
 
-                                {/* Process Arrow & Time */}
-                                <div className="flex flex-col items-center justify-center opacity-40 group-hover:opacity-100 transition-opacity px-2 gap-1">
-                                  <div className="w-full h-px bg-white/20 relative w-[3em]">
-                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-1.5 h-1.5 border-t border-r border-white/20 rotate-45 transform" />
-                                  </div>
-                                  <span className="text-[0.7em] font-mono font-bold bg-[#111] px-1.5 rounded text-white/60">{r.time}s</span>
-                                </div>
-
-                                {/* Outputs */}
-                                <div className="flex items-center gap-[0.8em]">
-                                  {r.outputs.map((output: any, idx: number) => {
-                                    const item = getItem(output.item_id);
-                                    if (!item) console.warn("Missing item output:", output.item_id, "for recipe:", r.id);
-                                    return (
-                                      <div key={idx} className="relative group/item" title={item?.name || output.item_id}>
-                                        <div className="w-[3.5em] h-[3.5em] bg-[#2a2a2a] border border-[#444] rounded flex items-center justify-center p-1.5 shadow-sm group-hover/item:border-[#0078d7] transition-colors ring-1 ring-white/5">
-                                          {item?.icon ? (
-                                            <img
-                                              src={item.icon}
-                                              className="max-w-full max-h-full drop-shadow-md"
-                                              onError={(e) => console.error("Image Load FAIL:", e.currentTarget.src)}
-                                            />
-                                          ) : (
-                                            <span className="text-red-500 text-xs">?</span>
-                                          )}
-                                        </div>
-                                        <div className="absolute -bottom-1.5 -right-1.5 bg-[#0078d7] text-white text-[0.75em] font-bold font-mono px-1.5 py-0.5 rounded border border-[#005a9e] shadow-md z-10">{output.amount}</div>
+                                  return (
+                                    <div key={i} className="flex flex-col items-center gap-1">
+                                      <div className="w-[4em] h-[4em] bg-[#1a1a1a] border border-white/10 rounded flex items-center justify-center p-2 relative group/slot">
+                                        {item ? (
+                                          <>
+                                            <img src={item.icon} className="max-w-full max-h-full drop-shadow-md" />
+                                            <div className="absolute -top-1 -right-1 bg-sky-600 text-[0.65em] font-bold px-1 rounded shadow-lg">{count}</div>
+                                          </>
+                                        ) : (
+                                          <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
+                                        )}
                                       </div>
-                                    );
-                                  })}
-                                </div>
+                                      <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                        <div className="h-full bg-sky-500/50" style={{ width: `${(count / max) * 100}%` }} />
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            ))}
+                            </div>
+
+                            {/* Arrow */}
+                            <div className="opacity-10 shrink-0">
+                              <ChevronRight size={24} />
+                            </div>
+
+                            {/* Output Slots */}
+                            <div className="flex flex-col gap-3 flex-1">
+                              <span className="text-[0.65em] font-bold opacity-30 uppercase text-center">Output</span>
+                              <div className="flex justify-center">
+                                {Array.from({ length: meta.output_slots || 0 }).map((_, i) => {
+                                  const uniqueItems = Array.from(new Set(pf.output_buffer?.map((s: any) => s.item_id as string) || []));
+                                  const itemId = uniqueItems[i];
+                                  const item = (typeof itemId === 'string') ? getItem(itemId) : null;
+                                  const count = pf.output_buffer?.filter((s: any) => s.item_id === itemId).reduce((acc: number, s: any) => acc + (s.quantity || 1), 0) || 0;
+                                  const max = appData?.config?.slot_capacity || 50;
+
+                                  return (
+                                    <div key={i} className="flex flex-col items-center gap-1">
+                                      <div className="w-[4em] h-[4em] bg-[#1a1a1a] border border-white/10 rounded flex items-center justify-center p-2 relative group/slot">
+                                        {item ? (
+                                          <>
+                                            <img src={item.icon} className="max-w-full max-h-full drop-shadow-md" />
+                                            <div className="absolute -top-1 -right-1 bg-orange-600 text-[0.65em] font-bold px-1 rounded shadow-lg">{count}</div>
+                                          </>
+                                        ) : (
+                                          <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
+                                        )}
+                                      </div>
+                                      <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                        <div className="h-full bg-orange-500/50" style={{ width: `${(count / max) * 100}%` }} />
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           </div>
+                        </div>
+                      )}
+
+                      {/* RECIPES SECTION (Collapsible Bar) */}
+                      {recipes.length > 0 ? (
+                        <div className="border border-white/5 rounded overflow-hidden">
+                          <button
+                            onClick={() => setShowRecipes(!showRecipes)}
+                            className="w-full h-[3em] bg-[#2d2d2d] flex items-center px-4 justify-between hover:bg-[#333] transition-colors border-b border-black/20"
+                          >
+                            <span className="text-[0.8em] font-bold uppercase tracking-widest text-[#0078d7] flex items-center gap-3">
+                              <Cpu size={16} /> Recipe Database
+                            </span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[0.7em] bg-white/5 px-2 py-0.5 rounded opacity-50 font-mono">{recipes.length} PLUGINS</span>
+                              {showRecipes ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                            </div>
+                          </button>
+
+                          {showRecipes && (
+                            <div className="p-3 space-y-3 bg-black/10 animate-in slide-in-from-top-2 duration-200 overflow-y-auto max-h-[25em] custom-scrollbar">
+                              <div className="grid gap-[0.5em]">
+                                {recipes.map((r: any) => (
+                                  <div key={r.id} className="bg-[#1e1e1e] border border-[#333] p-[1em] rounded-md flex items-center justify-between gap-[1em] hover:bg-[#252525] hover:border-white/10 transition-colors group">
+                                    <div className="flex items-center gap-[0.8em]">
+                                      {r.inputs.map((input: any, idx: number) => {
+                                        const item = getItem(input.item_id);
+                                        return (
+                                          <div key={idx} className="relative group/item" title={item?.name || input.item_id}>
+                                            <div className="w-[3.2em] h-[3.2em] bg-[#2a2a2a] border border-[#444] rounded flex items-center justify-center p-1 shadow-sm group-hover/item:border-[#0078d7]">
+                                              {item?.icon && <img src={item.icon} className="max-w-full max-h-full drop-shadow-md" />}
+                                            </div>
+                                            <div className="absolute -bottom-1 -right-1 bg-[#111] text-white text-[0.65em] font-bold font-mono px-1 rounded border border-[#333] shadow-md z-10">{input.amount}</div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                    <div className="flex flex-col items-center justify-center opacity-40 group-hover:opacity-100 transition-opacity px-2 gap-1">
+                                      <div className="w-[2em] h-px bg-white/20 relative">
+                                        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-1.5 h-1.5 border-t border-r border-white/20 rotate-45" />
+                                      </div>
+                                      <span className="text-[0.6em] font-mono font-bold opacity-60">{r.time}s</span>
+                                    </div>
+                                    <div className="flex items-center gap-[0.8em]">
+                                      {r.outputs.map((output: any, idx: number) => {
+                                        const item = getItem(output.item_id);
+                                        return (
+                                          <div key={idx} className="relative group/item" title={item?.name || output.item_id}>
+                                            <div className="w-[3.2em] h-[3.2em] bg-[#2a2a2a] border border-[#444] rounded flex items-center justify-center p-1 shadow-sm group-hover/item:border-[#0078d7]">
+                                              {item?.icon && <img src={item.icon} className="max-w-full max-h-full drop-shadow-md" />}
+                                            </div>
+                                            <div className="absolute -bottom-1 -right-1 bg-[#0078d7] text-white text-[0.65em] font-bold font-mono px-1 rounded shadow-md z-10">{output.amount}</div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         appData?.config?.universal_provider_facility_ids?.includes(meta.id) && (
@@ -911,6 +984,10 @@ export default function App() {
 
 function PortSelectorModal({ isOpen, onClose, onSelect, appData, facilityName, portId }: any) {
   const [search, setSearch] = useState("");
+  useEffect(() => {
+    if (isOpen) debugLog("[App] PortSelectorModal rendered. Items:", appData?.items?.length);
+  }, [isOpen, appData]);
+
   if (!isOpen) return null;
 
   const filteredItems = appData?.items?.filter((i: any) =>
@@ -919,7 +996,7 @@ function PortSelectorModal({ isOpen, onClose, onSelect, appData, facilityName, p
   ) || [];
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-[2em]">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-[2em]">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
       <div className="relative w-full max-w-[50em] bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in fade-in zoom-in duration-200">
         {/* Header */}
@@ -976,6 +1053,8 @@ function PortSelectorModal({ isOpen, onClose, onSelect, appData, facilityName, p
               <div className="h-[20em] flex flex-col items-center justify-center text-white/20 space-y-4">
                 <Search size={48} className="opacity-20" />
                 <p className="font-bold uppercase tracking-widest text-[0.9em]">No items found</p>
+                {/* Debug hint */}
+                <p className="text-[0.7em] text-white/20">Checked {appData?.items?.length || 0} items.</p>
               </div>
             )}
           </div>

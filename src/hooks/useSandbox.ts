@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { debugLog } from "../utils/logger";
 
@@ -9,11 +9,15 @@ export interface PlacedFacility {
     y: number;
     rotation: number;
     port_settings?: { port_id: string, item_id: string }[];
+    input_buffer?: { item_id: string, source_port_id?: string, target_port_id?: string, quantity: number }[];
+    output_buffer?: { item_id: string, source_port_id?: string, target_port_id?: string, quantity: number, progress?: number }[];
 }
 
 export interface LogisticsEdge {
     fromId: string;
+    fromPortId: string;
     toId: string;
+    toPortId: string;
 }
 
 export function useSandbox(appData?: any) {
@@ -22,13 +26,26 @@ export function useSandbox(appData?: any) {
     // Occupany Map: Key="x,y", Value={ instanceId, port? }
     const [occupancyMap, setOccupancyMap] = useState<Map<string, any>>(new Map());
     const [movingFacilityId, setMovingFacilityId] = useState<string | null>(null);
+    const [syncTrigger, setSyncTrigger] = useState(0);
 
-    // Sync to Rust Backend
+    // Refs to hold latest state for sync effect without dependency loop
+    const latestFacilitiesRef = useRef(placedFacilities);
+    const latestEdgesRef = useRef(edges);
+
+    latestFacilitiesRef.current = placedFacilities;
+    latestEdgesRef.current = edges;
+
+    // Sync to Rust Backend (Only on manual trigger)
     useEffect(() => {
         const GRID_SIZE = window.config?.grid_size || 64;
-        debugLog("[useSandbox] Syncing state to Rust. Count:", placedFacilities.length);
+        const currentFacilities = latestFacilitiesRef.current;
+        const currentEdges = latestEdgesRef.current;
+
+        // Skip initial empty sync if desired, or keep to clear backend
+        debugLog("[useSandbox] Syncing state to Rust. Trigger:", syncTrigger);
+
         invoke("update_simulation_state", {
-            facilities: placedFacilities.map(f => ({
+            facilities: currentFacilities.map(f => ({
                 instance_id: f.instanceId,
                 facility_id: f.facilityId,
                 x: Math.floor(f.x / GRID_SIZE),
@@ -36,16 +53,18 @@ export function useSandbox(appData?: any) {
                 rotation: f.rotation,
                 port_settings: f.port_settings || []
             })),
-            edges: edges.map(e => ({
+            edges: currentEdges.map(e => ({
                 from_instance_id: e.fromId,
+                from_port_id: e.fromPortId,
                 to_instance_id: e.toId,
+                to_port_id: e.toPortId,
                 item_id: "placeholder",
                 throughput: 1.0
             }))
         })
             .then(() => debugLog("[useSandbox] Sync Success"))
             .catch(err => debugLog("[useSandbox] Sync Failed (ERROR):", err));
-    }, [placedFacilities, edges]);
+    }, [syncTrigger]); // Only re-run when manually triggered
 
     const isColliding = useCallback((pixelX: number, pixelY: number, widthInPixels: number, heightInPixels: number) => {
         const GRID_SIZE = window.config?.grid_size || 64;
@@ -79,6 +98,7 @@ export function useSandbox(appData?: any) {
             rotation,
         };
         setPlacedFacilities((prev) => [...prev, newFacility]);
+        setSyncTrigger(prev => prev + 1);
         return newFacility.instanceId;
     }, []);
 
@@ -121,27 +141,94 @@ export function useSandbox(appData?: any) {
                     else if (r === 270) { px = port.y; py = (meta.width || 1) - 1 - port.x; }
 
                     const key = `${startX + px},${startY + py}`;
-                    newMap.set(key, {
-                        instanceId: pf.instanceId,
-                        port: {
-                            id: port.id,
-                            type: port.type,
-                            direction: port.direction
-                        }
-                    });
+                    const entry = newMap.get(key) || { instanceId: pf.instanceId, ports: [] };
+
+                    const portData = {
+                        id: port.id,
+                        type: port.type,
+                        direction: port.direction
+                    };
+
+                    if (!entry.ports) entry.ports = [];
+                    entry.ports.push(portData);
+                    // Port info for grid-based interaction (convenience)
+                    entry.port = portData;
+
+                    newMap.set(key, entry);
                 });
             }
         });
         setOccupancyMap(newMap);
-    }, [placedFacilities, appData]);
 
-    const addEdge = useCallback((fromId: string, toId: string) => {
-        if (fromId === toId) return;
-        setEdges((prev) => {
-            if (prev.find(e => e.fromId === fromId && e.toId === toId)) return prev;
-            return [...prev, { fromId, toId }];
+        // 3. AUTOMATIC TOPOLOGY DISCOVERY
+        // Find adjacent ports and create edges
+        const newEdges: LogisticsEdge[] = [];
+        placedFacilities.forEach(pf => {
+            const meta = appData.facilities.find((f: any) => f.id === pf.facilityId);
+            if (!meta || !meta.ports) return;
+
+            const startX = Math.floor(pf.x / GRID_SIZE);
+            const startY = Math.floor(pf.y / GRID_SIZE);
+            const rot = pf.rotation || 0;
+
+            meta.ports.forEach((port: any) => {
+                if (port.type !== 'output') return;
+
+                // Rotated port position
+                let px = port.x;
+                let py = port.y;
+                const r = rot % 360;
+                if (r === 90) { px = (meta.height || 1) - 1 - port.y; py = port.x; }
+                else if (r === 180) { px = (meta.width || 1) - 1 - port.x; py = (meta.height || 1) - 1 - port.y; }
+                else if (r === 270) { px = port.y; py = (meta.width || 1) - 1 - port.x; }
+
+                // Check neighbor according to direction
+                let nx = startX + px;
+                let ny = startY + py;
+
+                // Directions are relative to facility orientation? 
+                // In database.json, direction is "bottom", "left" etc for the default orientation.
+                // We need the ACTUAL world direction of the port.
+                let worldDir = port.direction;
+                const directions = ["top", "right", "bottom", "left"];
+                if (rot !== 0) {
+                    const idx = directions.indexOf(port.direction);
+                    if (idx !== -1) {
+                        worldDir = directions[(idx + (rot / 90)) % 4];
+                    }
+                }
+
+                if (worldDir === 'top') ny--;
+                else if (worldDir === 'bottom') ny++;
+                else if (worldDir === 'left') nx--;
+                else if (worldDir === 'right') nx++;
+
+                const neighbor = newMap.get(`${nx},${ny}`);
+                if (neighbor && neighbor.ports) {
+                    const inputPort = neighbor.ports.find((p: any) => p.type === 'input');
+                    if (inputPort) {
+                        console.log(`[Goal] Discovery: ${pf.instanceId}:${port.id} -> ${neighbor.instanceId}:${inputPort.id}`);
+                        newEdges.push({
+                            fromId: pf.instanceId,
+                            fromPortId: port.id,
+                            toId: neighbor.instanceId,
+                            toPortId: inputPort.id
+                        });
+                    }
+                }
+            });
         });
-    }, []);
+
+        // Update edges state if changed
+        setEdges(prev => {
+            const isDifferent = JSON.stringify(prev) !== JSON.stringify(newEdges);
+            if (isDifferent) {
+                setTimeout(() => setSyncTrigger(t => t + 1), 0); // Trigger sync to Rust
+                return newEdges;
+            }
+            return prev;
+        });
+    }, [placedFacilities, appData]);
 
     const rotateFacility = useCallback((instanceId: string) => {
         setPlacedFacilities((prev) => prev.map(f => {
@@ -151,12 +238,14 @@ export function useSandbox(appData?: any) {
             }
             return f;
         }));
+        setSyncTrigger(prev => prev + 1);
     }, []);
 
     const clearBoard = useCallback(() => {
         setPlacedFacilities([]);
         setEdges([]);
         setOccupancyMap(new Map());
+        setSyncTrigger(prev => prev + 1);
     }, []);
 
     const applyLayout = useCallback((layout: any[]) => {
@@ -170,6 +259,7 @@ export function useSandbox(appData?: any) {
         }));
         setPlacedFacilities(newFacilities);
         setEdges([]);
+        setSyncTrigger(prev => prev + 1);
         // content of occupiedCells will update via useEffect
     }, []);
 
@@ -178,12 +268,35 @@ export function useSandbox(appData?: any) {
             const next = prev.map(f => f.instanceId === instanceId ? { ...f, ...updates } : f);
             return next;
         });
+        setSyncTrigger(prev => prev + 1);
     }, []);
 
     const removeFacility = useCallback((instanceId: string) => {
         setPlacedFacilities(prev => prev.filter(f => f.instanceId !== instanceId));
         setEdges(prev => prev.filter(e => e.fromId !== instanceId && e.toId !== instanceId));
+        setSyncTrigger(prev => prev + 1);
         debugLog("[useSandbox] Removed Facility:", instanceId);
+    }, []);
+
+    const stepSimulation = useCallback(async () => {
+        try {
+            const updatedFacilities = await invoke<any[]>("tick_simulation");
+            // Merge updates
+            const mapped = updatedFacilities.map((f: any) => ({
+                instanceId: f.instance_id,
+                facilityId: f.facility_id,
+                x: f.x * (window.config?.grid_size || 64),
+                y: f.y * (window.config?.grid_size || 64),
+                rotation: f.rotation,
+                port_settings: f.port_settings,
+                input_buffer: f.input_buffer,
+                output_buffer: f.output_buffer
+            }));
+
+            setPlacedFacilities(mapped);
+        } catch (e) {
+            console.error(e);
+        }
     }, []);
 
     return {
@@ -193,11 +306,11 @@ export function useSandbox(appData?: any) {
         addFacility,
         updateFacility,
         setMovingFacilityId,
-        addEdge,
         isColliding,
         rotateFacility,
         applyLayout,
         clearBoard,
-        removeFacility
+        removeFacility,
+        stepSimulation
     };
 }

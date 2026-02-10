@@ -180,6 +180,19 @@ fn log_to_terminal(msg: String) {
     println!("[Frontend]: {}", msg);
 }
 
+#[tauri::command]
+fn tick_simulation(state: State<'_, AppState>) -> Vec<crate::engine::facility::PlacedFacility> {
+    // println!("DEBUG: tick_simulation called");
+    let mut grid = state.grid.lock().unwrap();
+    
+    // Run simulation tick (e.g. 60 ticks per second, so dt = 1/60 approx 0.016)
+    // For now, let's just use a fixed delta for logic stability
+    crate::engine::logistics_engine::LogisticsEngine::tick(&mut grid, 0.016);
+    
+    // Return updated state immediately for frontend sync
+    grid.placed_facilities.clone()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     println!("DEBUG: Starting Endfield lib run()");
@@ -201,7 +214,16 @@ pub fn run() {
             optimizer,
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![update_config, get_grid_state, get_app_data, update_simulation_state, get_power_status, generate_optimal_layouts, log_to_terminal])
+        .invoke_handler(tauri::generate_handler![
+            update_config, 
+            get_grid_state, 
+            get_app_data, 
+            update_simulation_state, 
+            get_power_status, 
+            generate_optimal_layouts, 
+            log_to_terminal,
+            tick_simulation // NEW
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

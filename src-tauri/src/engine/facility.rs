@@ -36,6 +36,16 @@ pub struct PortSetting {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BufferSlot {
+    pub item_id: String,
+    pub source_port_id: Option<String>,
+    pub target_port_id: Option<String>,
+    pub quantity: u32,
+    #[serde(default)]
+    pub progress: f64, // 0.0 to 1.0 representing movement progress
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PlacedFacility {
     pub instance_id: String,
     pub facility_id: String,
@@ -43,4 +53,8 @@ pub struct PlacedFacility {
     pub y: i32,
     pub rotation: u32, // 0, 90, 180, 270
     pub port_settings: Option<Vec<PortSetting>>,
+    #[serde(default)]
+    pub input_buffer: Vec<BufferSlot>,
+    #[serde(default)]
+    pub output_buffer: Vec<BufferSlot>,
 }

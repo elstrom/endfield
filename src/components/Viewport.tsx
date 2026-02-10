@@ -12,7 +12,6 @@ declare global {
         addFacility: (id: string, x: number, y: number, rotation?: number) => void;
         updateFacility: (id: string, updates: any) => void;
         setMovingFacilityId: (id: string | null) => void;
-        addEdge: (from: string, to: string) => void;
         isColliding: (x: number, y: number, w: number, h: number) => boolean;
         appData: any;
         placedFacilities: any[];
@@ -50,8 +49,17 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
         holdStartPos: { x: 0, y: 0 },
         initialized: false,
         pathStart: null as { x: number, y: number } | null,
-        pathPreview: [] as { x: number, y: number }[]
+        pathPreview: [] as { x: number, y: number }[],
+        holdingFacilityId: null as string | null,
+        didClickFacility: false
     });
+
+    const isReadyRef = useRef(false);
+    const appDataRef = useRef<any>(appData);
+
+    useEffect(() => {
+        appDataRef.current = appData;
+    }, [appData]);
 
     useEffect(() => {
         debugLog("[ViewportInteraction] Mount");
@@ -64,7 +72,16 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
         draggedFacilityIdRef.current = draggedFacilityId;
     }, [draggedFacilityId]);
 
-    const { placedFacilities, edges, occupancyMap, addFacility, updateFacility, removeFacility, setMovingFacilityId, addEdge, isColliding } = useSandbox(appData);
+    const { placedFacilities, edges, occupancyMap, addFacility, updateFacility, removeFacility, setMovingFacilityId, isColliding, stepSimulation } = useSandbox(appData);
+
+    // Simulation Loop (20 TPS)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            stepSimulation();
+        }, 50);
+        return () => clearInterval(interval);
+    }, [stepSimulation]);
+
     const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
     const occupancyMapRef = useRef<Map<string, any>>(occupancyMap);
     const placedFacilitiesRef = useRef<any[]>(placedFacilities);
@@ -84,7 +101,7 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
         pathfinderRef.current = new Pathfinder(occupancyMap);
     }, [occupancyMap]);
 
-    const config = appData?.config;
+    const config = appDataRef.current?.config;
     const GRID_SIZE = config?.grid_size || 64;
 
     // Helper: Transform port coordinates based on rotation
@@ -104,12 +121,11 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
         window.updateFacility = updateFacility;
         window.removeFacility = removeFacility;
         window.setMovingFacilityId = setMovingFacilityId;
-        window.addEdge = addEdge;
         window.isColliding = isColliding;
-        window.appData = appData;
+        window.appData = appDataRef.current;
         window.placedFacilities = placedFacilities;
         window.config = config;
-    }, [selectedFacilityId, addFacility, updateFacility, removeFacility, setMovingFacilityId, addEdge, isColliding, appData, placedFacilities, config]);
+    }, [selectedFacilityId, addFacility, updateFacility, removeFacility, setMovingFacilityId, isColliding, config, placedFacilities]);
 
     // Compass Overlay State
     const [compassRotation, setCompassRotation] = useState(0);
@@ -130,7 +146,7 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
         }
 
         const world = worldRef.current;
-        debugLog("[ViewportInteraction] renderScene starting", { facilities: placedFacilities.length, edges: edges.length });
+        // debugLog("[ViewportInteraction] renderScene starting", { facilities: placedFacilities.length, edges: edges.length });
 
         let facilitiesLayer = world.children.find(c => c.label === "facilities") as PIXI.Container;
         if (!facilitiesLayer) {
@@ -211,21 +227,9 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
             facilityContainer.eventMode = 'static';
             facilityContainer.cursor = 'pointer';
 
-            // CLICK / TAP EVENT (< 1s Release)
-            facilityContainer.on('pointertap', () => {
-                // Only select if we did NOT just finish a drag
-                // and if the hold timer was cleared before firing.
-                // ALSO: Do not select if we are currently dragging/placing a NEW facility
-                const state = interactionState.current;
-                if (!state.draggedExistingId && !draggedFacilityIdRef.current) {
-                    debugLog("[Viewport] Tap Detected (Selection):", pf.instanceId);
-                    setSelectedFacilityId(pf.instanceId);
-                    // Ensure visual feedback immediately
-                    window.dispatchEvent(new CustomEvent('facility-selected', { detail: { id: pf.instanceId } }));
-                } else if (draggedFacilityIdRef.current) {
-                    debugLog("[Viewport] Tap Suppressed: Placement tool active (Ref check)");
-                }
-            });
+            // CLICK / TAP EVENT handled manually in global onMouseUp to ensure reliability
+            // facilityContainer.on('pointertap', ...) - REMOVED
+
             facilityContainer.on('pointerdown', (e) => {
                 const state = interactionState.current;
                 if (draggedFacilityIdRef.current) {
@@ -251,6 +255,8 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
 
                 state.holdStartPos = { x: e.global.x, y: e.global.y };
                 state.isHolding = true;
+                state.holdingFacilityId = pf.instanceId;
+                state.didClickFacility = true;
 
                 // VISUAL: Feedback for holding
                 if (appRef.current?.canvas) appRef.current.canvas.style.cursor = "progress"; // Or 'wait'
@@ -301,6 +307,8 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
 
             if (meta.ports) {
                 const isUniversal = window.config?.universal_provider_facility_ids?.includes(meta.id);
+                let inputPortIdx = 0;
+                let outputPortIdx = 0;
 
                 for (const port of meta.ports) {
                     const pPos = getRotatedPortPosition(port, meta.width, meta.height, pf.rotation || 0);
@@ -308,7 +316,7 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                     const py = pPos.y * GRID_SIZE;
 
                     const pGfx = new PIXI.Graphics();
-                    const pColor = port.type === 'input' ? 0x00ff00 : 0xff0000;
+                    const pColor = port.type === 'output' ? 0xff0000 : 0x00ff00; // Red for OUT, Green for IN
 
                     // Specific Logic for Universal Provider Output Ports
                     const isInteractableOutput = isUniversal && port.type === 'output';
@@ -323,50 +331,39 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                     pGfx.lineStyle(2, pColor, 0.8);
                     pGfx.drawRect(0, 0, GRID_SIZE, GRID_SIZE);
 
+                    // ITEM VISUALIZATION (Static removed, now handled by moving buffer renderer below)
+
+
                     if (isInteractableOutput) {
-                        pGfx.eventMode = 'static';
-                        pGfx.cursor = 'pointer';
+                        // Visual Markers ONLY - Interaction logic is now handled globally via Grid System in onMouseUp
+                        // Icon or Interaction Indicator in Center (Only if NO item is visualized, to avoid clutter)
+                        // Note: visual indicator only shows if no item is currently traversing
+                        const hasItemInPort = pf.output_buffer?.[outputPortIdx] || pf.input_buffer?.[inputPortIdx];
 
-                        // Icon or Interaction Indicator in Center
-                        pGfx.lineStyle(2, 0xffffff, 0.9);
-                        pGfx.drawCircle(GRID_SIZE / 2, GRID_SIZE / 2, 6);
+                        if (!hasItemInPort) {
+                            pGfx.lineStyle(2, 0xffffff, 0.9);
+                            pGfx.drawCircle(GRID_SIZE / 2, GRID_SIZE / 2, 6);
 
-                        // Show selected item icon if exists
-                        const setting = pf.port_settings?.find((s: any) => s.port_id === port.id);
-                        if (setting) {
-                            const item = window.appData?.items?.find((i: any) => i.id === setting.item_id);
-                            if (item?.icon) {
-                                // Draw simple dot representation for now, or sprite later
+                            // Show selected item icon if exists (Configuration)
+                            const setting = pf.port_settings?.find((s: any) => s.port_id === port.id);
+                            if (setting) {
                                 pGfx.beginFill(0xffffff, 1);
                                 pGfx.drawCircle(GRID_SIZE / 2, GRID_SIZE / 2, 4);
                                 pGfx.endFill();
                             }
                         }
-
-                        pGfx.on('pointertap', (e) => {
-                            // Prevent selection if we are placing something (e.g. Belt)
-                            if (draggedFacilityIdRef.current) {
-                                debugLog("[Viewport] Port Selection Blocked: Tool Active");
-                                return;
-                            }
-
-                            e.stopPropagation();
-                            debugLog("[Viewport] Port Selection Triggered:", pf.instanceId, port.id);
-                            window.dispatchEvent(new CustomEvent('open-port-selector', {
-                                detail: {
-                                    instanceId: pf.instanceId,
-                                    portId: port.id,
-                                    facilityName: meta.name
-                                }
-                            }));
-                        });
                     }
 
                     pGfx.x = px;
                     pGfx.y = py;
                     facilityContainer.addChild(pGfx);
+
+                    if (port.type === 'input') inputPortIdx++;
+                    else if (port.type === 'output') outputPortIdx++;
                 }
             }
+
+
 
             // Label
             const label = new PIXI.Text({
@@ -385,7 +382,7 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
 
             facilitiesLayer.addChild(facilityContainer);
         }
-        debugLog("[ViewportInteraction] Goal Print: renderScene completed");
+        // debugLog("[ViewportInteraction] Goal Print: renderScene completed");
     };
 
     useEffect(() => {
@@ -394,7 +391,6 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
 
 
     // --- PIXI SETUP ---
-    const isReadyRef = useRef(false);
 
     useEffect(() => {
         if (!containerRef.current || !config) return;
@@ -463,6 +459,11 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
             world.addChild(previewLayer);
             world.setChildIndex(previewLayer, 3);
 
+            const itemsLayer = new PIXI.Graphics();
+            itemsLayer.label = "items";
+            world.addChild(itemsLayer);
+            world.setChildIndex(itemsLayer, 4);
+
             // --- CAMERA INIT ---
             const state = interactionState.current;
             if (!state.initialized) {
@@ -500,6 +501,71 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                 const cx = app.screen.width / 2;
                 const cy = app.screen.height / 2;
                 world.position.set(cx, cy);
+
+                // --- ITEM FLOW ANIMATION ---
+                const itemsGfx = world.children.find(c => c.label === "items") as PIXI.Graphics;
+                if (itemsGfx && placedFacilitiesRef.current && appDataRef.current) {
+                    // Ensure items are always on top
+                    if (world.getChildIndex(itemsGfx) !== world.children.length - 1) {
+                        try { world.setChildIndex(itemsGfx, world.children.length - 1); } catch (e) { }
+                    }
+
+                    itemsGfx.clear();
+                    const GRID_SIZE = window.config?.grid_size || 64;
+
+                    placedFacilitiesRef.current.forEach(pf => {
+                        const meta = appDataRef.current.facilities?.find((f: any) => f.id === pf.facilityId);
+                        if (!meta) return;
+
+                        // Combine buffers for simplified rendering loop
+                        const allSlots = [
+                            ...(pf.input_buffer || []).map((s: any) => ({ ...s, isInput: true })),
+                            ...(pf.output_buffer || []).map((s: any) => ({ ...s, isInput: false }))
+                        ];
+
+                        allSlots.forEach(slot => {
+                            // OPTIMIZATION: Only render items that are actually moving (Output Buffer)
+                            // Items in Input Buffer (isInput: true) are stored and visible in UI, not on map.
+                            // Items in machines that are finished/waiting (progress >= 1.0) are also only in UI.
+                            if (slot.isInput) return;
+
+                            const isBelt = pf.facilityId.toLowerCase().includes('belt');
+                            if (!isBelt && slot.progress >= 1.0) return;
+
+                            const itemMeta = appDataRef.current.items?.find((i: any) => i.id === slot.item_id);
+                            const color = itemMeta?.color || "#AAAAAA";
+
+                            const sourcePort = meta.ports?.find((p: any) => p.id === slot.source_port_id);
+                            const targetPort = meta.ports?.find((p: any) => p.id === slot.target_port_id);
+
+                            const getPos = (p: any) => {
+                                const w = (meta.width || 1) * GRID_SIZE;
+                                const h = (meta.height || 1) * GRID_SIZE;
+                                if (!p) return { x: pf.x + w / 2, y: pf.y + h / 2 };
+                                const rotated = getRotatedPortPosition(p, meta.width, meta.height, pf.rotation || 0);
+                                return {
+                                    x: pf.x + rotated.x * GRID_SIZE + GRID_SIZE / 2,
+                                    y: pf.y + rotated.y * GRID_SIZE + GRID_SIZE / 2
+                                };
+                            };
+
+                            const startPos = getPos(sourcePort);
+                            const endPos = getPos(targetPort);
+
+                            const prog = slot.isInput ? 0 : (slot.progress || 0);
+                            const worldX = startPos.x + (endPos.x - startPos.x) * prog;
+                            const worldY = startPos.y + (endPos.y - startPos.y) * prog;
+
+                            // PIXI 8 Modern API
+                            itemsGfx.circle(worldX, worldY, 10).fill({ color, alpha: 1 });
+
+                            // Visual indicator for moving / ready
+                            if (!slot.isInput && slot.progress > 0.9) {
+                                itemsGfx.circle(worldX, worldY, 12).stroke({ color: 0xffffff, width: 2, alpha: (slot.progress - 0.9) * 10 });
+                            }
+                        });
+                    });
+                }
 
                 // 1. WASD Panning
                 if (!state.spacePressed && !state.keysPressed["AltLeft"] && !state.keysPressed["AltRight"]) {
@@ -914,14 +980,46 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
             debugLog("[ViewportInteraction] MouseUp", { draggedId, isDragging: state.isDragging, draggedExistingId: state.draggedExistingId, isHolding: state.isHolding });
 
             if (state.isHolding) {
-                // We were holding, but timer didn't fire (so < 1s).
-                // We should trigger SELECTION logic here if we can identify the target.
-                // However, we don't have the target ID here easily.
-                // ALTERNATIVE: Use `pointertap` on the facility for selection! 
-                // But `pointerdown` + `pointerup` = `pointertap`.
-                // If we consume `pointerdown`, `pointertap` might still fire.
-                // Let's try adding `pointertap` to the facility in `renderScene`.
+                // Determine exactly what was clicked using the GRID SYSTEM (Source of Truth)
+                if (containerRef.current && worldRef.current) {
+                    const rect = containerRef.current.getBoundingClientRect();
+                    const worldPoint = worldRef.current.toLocal({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+                    const gx = Math.floor(worldPoint.x / GRID_SIZE);
+                    const gy = Math.floor(worldPoint.y / GRID_SIZE);
+
+                    const occupant = occupancyMapRef.current.get(`${gx},${gy}`);
+                    debugLog("[Viewport] MouseUp Click Check at:", gx, gy, "Occupant:", occupant ? "FOUND" : "EMPTY");
+
+                    if (occupant) {
+                        const pf = placedFacilitiesRef.current.find(f => f.instanceId === occupant.instanceId);
+                        const meta = appData.facilities.find((m: any) => m.id === pf?.facilityId);
+
+                        // 1. Check if we clicked an INTERACTABLE PORT (Output)
+                        if (occupant.port && occupant.port.type === 'output') {
+                            debugLog("[Viewport] Port Triggered via Grid System:", occupant.instanceId, occupant.port.id);
+                            window.dispatchEvent(new CustomEvent('open-port-selector', {
+                                detail: {
+                                    instanceId: occupant.instanceId,
+                                    portId: occupant.port.id,
+                                    facilityName: meta?.name
+                                }
+                            }));
+                            // Reset state and return to prevent facility detail from opening
+                            state.isHolding = false;
+                            state.holdingFacilityId = null;
+                            if (appRef.current?.canvas) appRef.current.canvas.style.cursor = "default";
+                            return;
+                        }
+
+                        // 2. Otherwise, it's a normal click on the facility body
+                        debugLog("[Viewport] Facility Selected via Grid System:", occupant.instanceId);
+                        setSelectedFacilityId(occupant.instanceId);
+                        window.dispatchEvent(new CustomEvent('facility-selected', { detail: { id: occupant.instanceId } }));
+                    }
+                }
+
                 state.isHolding = false;
+                state.holdingFacilityId = null;
                 // Reset cursor if we were holding but didn't drag
                 if (appRef.current?.canvas) appRef.current.canvas.style.cursor = "default";
             }
@@ -988,8 +1086,6 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                                 const nodeToCompare = next || prev;
                                 // If endpoint (no next), align with previous
                                 if (nodeToCompare) {
-                                    const dx = nodeToCompare.x - pos.x;
-                                    const dy = nodeToCompare.y - pos.y;
                                     // If we are looking at next, vector is pos -> next.
                                     // If we are looking at prev (endpoint), vector is prev -> pos.
 
@@ -1192,7 +1288,15 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
             }
 
             // Deselect if clicking on empty space (and not panning)
+            // Check didClickFacility flag to prevent deselecting if we actually clicked a facility
+            // (since DOM mousedown runs after PIXI pointerdown)
             if (!isValidPanClick && !state.draggedExistingId) {
+                if (state.didClickFacility) {
+                    debugLog("[ViewportInteraction] MouseDown on Facility - Preventing Deselect");
+                    state.didClickFacility = false; // Reset flag
+                    return;
+                }
+
                 if (pathStart) {
                     debugLog("[Pathfinding] Cancelling Path Construction");
                     setPathStart(null);
