@@ -1,16 +1,19 @@
 use crate::engine::grid::GridState;
-use crate::engine::facility::{BufferSlot, PlacedFacility};
+use crate::engine::facility::BufferSlot;
 use std::collections::HashMap;
 
 pub struct LogisticsEngine;
 
 impl LogisticsEngine {
-    pub fn tick(grid: &mut GridState, dt: f64) {
+    pub fn tick(grid: &mut GridState, dt: f64, recipes: &Vec<crate::engine::recipe::Recipe>) {
         if !grid.logistics_edges.is_empty() {
              // println!("DEBUG: Logistics Engine Tick. Edges: {}", grid.logistics_edges.len());
         }
         
-        // 1. Universal Provider Logic (Slower Cadence)
+        let geometry = crate::engine::data_loader::DataLoader::load_geometry();
+        let flow_rate = geometry["config"]["logistics_flow_rate_units_per_s"].as_f64().unwrap_or(0.5);
+        
+        // 1. Universal Provider Logic (Spawns items into Machine Output Buffer)
         for facility in &mut grid.placed_facilities {
             if let Some(settings) = &facility.port_settings {
                 for setting in settings {
@@ -19,9 +22,10 @@ impl LogisticsEngine {
                     );
 
                     if has_connection {
-                        // Check if we can spawn (spacing)
+                        // Spacing check: allow 2 items per grid (spacing 0.5)
+                        // New item can spawn if the previous one is at least halfway (0.5 progress)
                         let can_spawn = !facility.output_buffer.iter().any(|s| 
-                            s.target_port_id.as_ref() == Some(&setting.port_id) && s.progress < 0.35
+                            s.source_port_id.as_ref() == Some(&setting.port_id) && s.progress < 0.5
                         );
                         
                         if can_spawn {
@@ -30,7 +34,7 @@ impl LogisticsEngine {
                                 source_port_id: Some(setting.port_id.clone()),
                                 target_port_id: Some(setting.port_id.clone()),
                                 quantity: 1,
-                                progress: 1.0, 
+                                progress: 0.0,
                             });
                         }
                     }
@@ -38,21 +42,18 @@ impl LogisticsEngine {
             }
         }
 
-        // 2. Progress and Transfer Pass
+        // 2. Dynamic Progress Update (60FPS Smooth Movement)
         for facility in &mut grid.placed_facilities {
+            for slot in &mut facility.input_buffer {
+                if slot.progress < 1.0 && !slot.item_id.is_empty() {
+                    slot.progress += dt * flow_rate;
+                    if slot.progress > 1.0 { slot.progress = 1.0; }
+                }
+            }
             for slot in &mut facility.output_buffer {
                 if slot.progress < 1.0 {
-                    let old_progress = slot.progress;
-                    // Slower speed: 1.0 units per second (as requested)
-                    slot.progress += dt * 1.0; 
+                    slot.progress += dt * flow_rate;
                     if slot.progress > 1.0 { slot.progress = 1.0; }
-                    
-                    if old_progress < 0.5 && slot.progress >= 0.5 {
-                        println!("[Logistics] Moving: Item {} in {} is mid-way ({:.2})", slot.item_id, facility.instance_id, slot.progress);
-                    }
-                    if slot.progress >= 1.0 && old_progress < 1.0 {
-                        println!("[GOAL] MOVE: Item {} in {} reached end of segment", slot.item_id, facility.instance_id);
-                    }
                 }
             }
         }
@@ -63,108 +64,168 @@ impl LogisticsEngine {
             .map(|(i, f)| (f.instance_id.clone(), i))
             .collect();
 
+        // 3. Smooth Transfer Pass (Between Facilities)
         let mut transfers: Vec<(usize, usize, String, String, BufferSlot)> = Vec::new(); 
-
         for edge in &grid.logistics_edges {
             if let (Some(&from_idx), Some(&to_idx)) = (
                 facility_indices.get(&edge.from_instance_id),
                 facility_indices.get(&edge.to_instance_id)
             ) {
                 let from_facility = &grid.placed_facilities[from_idx];
+                let from_meta = geometry.as_array().and_then(|a| a.iter().find(|f| f["id"] == from_facility.facility_id));
+                let from_is_logistics = from_meta.and_then(|m| m["category"].as_str()).map(|c| c == "logistics").unwrap_or(false);
                 
-                // Check all items in output_buffer for this port
-                for item in &from_facility.output_buffer {
-                    if item.target_port_id.as_ref() == Some(&edge.from_port_id) && item.progress >= 1.0 {
+                let source_buffer = if from_is_logistics { &from_facility.input_buffer } else { &from_facility.output_buffer };
+
+                for item in source_buffer {
+                    if item.progress >= 1.0 && !item.item_id.is_empty() {
                         let to_facility = &grid.placed_facilities[to_idx];
-                        // Allow larger input buffer to handle queues (e.g. 10 items)
-                        if to_facility.input_buffer.len() < 10 {
+                        // Spacing Check: Allow transfer if target has space for 0.5 density
+                        let target_is_clear = !to_facility.input_buffer.iter().any(|s| s.progress < 0.5);
+                        
+                        if target_is_clear && to_facility.input_buffer.len() < 10 {
                             transfers.push((from_idx, to_idx, edge.from_port_id.clone(), edge.to_port_id.clone(), item.clone()));
-                            break; // One transfer per edge per tick
+                            break; 
                         }
                     }
                 }
             }
         }
 
-        for (from_idx, to_idx, from_port, to_port, item) in transfers {
+        for (from_idx, to_idx, _from_port, to_port, item) in transfers {
             if from_idx == to_idx { continue; }
-            
             let (small_idx, large_idx) = if from_idx < to_idx { (from_idx, to_idx) } else { (to_idx, from_idx) };
             let (left, right) = grid.placed_facilities.split_at_mut(large_idx);
             let first = &mut left[small_idx];
             let second = &mut right[0];
-            
             let (from_fac, to_fac) = if from_idx < to_idx { (first, second) } else { (second, first) };
             
-            // Re-find the item to remove it
-            if let Some(pos) = from_fac.output_buffer.iter().position(|s| s.target_port_id.as_ref() == Some(&from_port) && s.item_id == item.item_id) {
-                // Check Capacity of destination input buffer
-                // For now, we count total items in input_buffer or items of same type
-                let current_count: u32 = to_fac.input_buffer.iter().filter(|s| s.item_id == item.item_id).map(|s| s.quantity).sum();
-                let max_capacity: u32 = 50; // Should ideally come from config, but using 50 as requested/default
+            let from_meta = geometry.as_array().and_then(|a| a.iter().find(|f| f["id"] == from_fac.facility_id));
+            let from_is_logistics = from_meta.and_then(|m| m["category"].as_str()).map(|c| c == "logistics").unwrap_or(false);
+            let source_buffer = if from_is_logistics { &mut from_fac.input_buffer } else { &mut from_fac.output_buffer };
 
-                if current_count < max_capacity {
-                    let mut moved_item = from_fac.output_buffer.remove(pos);
-                    // On transfer, the source is the port it just entered
-                    moved_item.progress = 0.0;
-                    moved_item.source_port_id = Some(to_port.clone());
-                    moved_item.target_port_id = None; 
-                    to_fac.input_buffer.push(moved_item);
-                    println!("[GOAL] TRANSFER: Item {} from {} (Port {}) arrived at {} (Port {})", 
-                        item.item_id, from_fac.instance_id, from_port, to_fac.instance_id, to_port);
-                }
+            if let Some(pos) = source_buffer.iter().position(|s| s.item_id == item.item_id && s.progress >= 1.0) {
+                 let mut moved_item = source_buffer.remove(pos);
+                 moved_item.progress = 0.0; // Reset for next grid segment
+                 moved_item.source_port_id = Some(to_port.clone());
+                 moved_item.target_port_id = None; 
+                 to_fac.input_buffer.push(moved_item);
             }
         }
         
-        // 3. Process Belt Items (Internal Logic: IN -> OUT)
-        let geometry = crate::engine::data_loader::DataLoader::load_geometry();
+        // 4. Internal Processing (Assignments)
         for facility in &mut grid.placed_facilities {
-            if facility.input_buffer.is_empty() { continue; }
+            let facility_meta = geometry.as_array().and_then(|a| a.iter().find(|f| f["id"] == facility.facility_id));
+            let is_logistics = facility_meta.and_then(|m| m["category"].as_str()).map(|c| c == "logistics").unwrap_or(false);
 
-            let is_belt = facility.facility_id.to_lowercase().contains("belt");
-
-            if is_belt {
-                // Belt Spacing Logic: Only take if there's space on the belt
-                let can_take = if let Some(last_item) = facility.output_buffer.last() {
-                    last_item.progress > 0.33 // 0.33 progress spacing (3 items per grid)
-                } else {
-                    true
-                };
-
-                if can_take && facility.output_buffer.len() < 3 {
-                    let mut item = facility.input_buffer.remove(0);
-                    if let Some(meta) = geometry.as_array().and_then(|a| a.iter().find(|f| f["id"] == facility.facility_id)) {
-                        if let Some(ports) = meta["ports"].as_array() {
+            if is_logistics {
+                for slot in &mut facility.input_buffer {
+                    if slot.target_port_id.is_none() {
+                        if let Some(ports) = facility_meta.and_then(|m| m["ports"].as_array()) {
                             if let Some(out_port) = ports.iter().find(|p| p["type"] == "output") {
-                                let out_id = out_port["id"].as_str().map(|s| s.to_string());
-                                item.source_port_id = out_id.clone();
-                                item.target_port_id = out_id;
-                                item.progress = 0.0; // Start at port entry
-                                println!("[Logistics] Processing: Item {} entered belt {}", item.item_id, facility.instance_id);
-                                facility.output_buffer.push(item);
+                                slot.target_port_id = out_port["id"].as_str().map(|s| s.to_string());
                             }
                         }
                     }
                 }
             } else {
-                // Machine Logic: Teleport to output instantly (Remove internal animation)
-                if facility.output_buffer.is_empty() {
-                    let mut item = facility.input_buffer.remove(0);
-                    if let Some(meta) = geometry.as_array().and_then(|a| a.iter().find(|f| f["id"] == facility.facility_id)) {
-                        if let Some(ports) = meta["ports"].as_array() {
-                            if let Some(out_port) = ports.iter().find(|p| p["type"] == "output") {
-                                let out_id = out_port["id"].as_str().map(|s| s.to_string());
-                                item.source_port_id = out_id.clone();
-                                item.target_port_id = out_id;
-                                item.progress = 1.0; // Instant teleport
-                                println!("[GOAL] PROCESS: Item {} finished processing in facility {}", item.item_id, facility.instance_id);
-                                facility.output_buffer.push(item);
+                // Machine/Facility Logic
+                
+                // Identify if there are any recipes for this facility
+                let facility_recipes: Vec<&crate::engine::recipe::Recipe> = recipes.iter()
+                    .filter(|r| r.facility_id == facility.facility_id)
+                    .collect();
+
+                if !facility_recipes.is_empty() {
+                    // RECIPE LOGIC
+                    
+                    // 1. Check if we need to start a new recipe
+                    if facility.active_recipe_id.is_none() {
+                         for recipe in &facility_recipes {
+                            // Check inputs
+                            let mut satisfied = true;
+                            for input in &recipe.inputs {
+                                let total_qty: u32 = facility.input_buffer.iter()
+                                    .filter(|s| s.item_id == input.item_id)
+                                    .map(|s| s.quantity)
+                                    .sum();
+                                if (total_qty as f32) < input.amount {
+                                    satisfied = false;
+                                    break;
+                                }
                             }
-                        }
+
+                            if satisfied {
+                                // Consume inputs
+                                for input in &recipe.inputs {
+                                    let mut needed = input.amount as u32;
+                                    while needed > 0 {
+                                        if let Some(pos) = facility.input_buffer.iter().position(|s| s.item_id == input.item_id && s.quantity > 0) {
+                                            if facility.input_buffer[pos].quantity > needed {
+                                                facility.input_buffer[pos].quantity -= needed;
+                                                needed = 0;
+                                            } else {
+                                                needed -= facility.input_buffer[pos].quantity;
+                                                facility.input_buffer[pos].quantity = 0;
+                                                facility.input_buffer[pos].item_id = "".to_string();
+                                            }
+                                        } else {
+                                            break; 
+                                        }
+                                    }
+                                }
+                                
+                                // Start Recipe
+                                facility.active_recipe_id = Some(recipe.id.clone());
+                                facility.recipe_progress = 0.0;
+                                println!("[Logistics] Recipe Started: {} in {}", recipe.id, facility.instance_id);
+                                break; // Start only one
+                            }
+                         }
                     }
+
+                    // 2. Process active recipe
+                    if let Some(recipe_id) = &facility.active_recipe_id.clone() {
+                         if let Some(recipe) = recipes.iter().find(|r| r.id == *recipe_id) {
+                             facility.recipe_progress += dt;
+                             
+                             // Check completion
+                             if facility.recipe_progress >= recipe.crafting_time as f64 {
+                                 // Determine output port (first output port found)
+                                 let mut out_port_id: Option<String> = None;
+                                 if let Some(meta) = geometry.as_array().and_then(|a| a.iter().find(|f| f["id"] == facility.facility_id)) {
+                                     if let Some(ports) = meta["ports"].as_array() {
+                                         if let Some(out_port) = ports.iter().find(|p| p["type"] == "output") {
+                                             out_port_id = out_port["id"].as_str().map(|s| s.to_string());
+                                         }
+                                     }
+                                 }
+
+                                 // Produce Outputs
+                                 for output in &recipe.outputs {
+                                     facility.output_buffer.push(BufferSlot {
+                                         item_id: output.item_id.clone(),
+                                         quantity: output.amount as u32,
+                                         source_port_id: out_port_id.clone(),
+                                         target_port_id: out_port_id.clone(),
+                                         progress: 1.0, // Instantly at output port
+                                     });
+                                 }
+                                 
+                                 println!("[Logistics] Recipe Finished: {} in {}", recipe.id, facility.instance_id);
+                                 facility.active_recipe_id = None;
+                                 facility.recipe_progress = 0.0;
+                             }
+                         } else {
+                             // Recipe ID invalid
+                             facility.active_recipe_id = None;
+                         }
+                    }
+
                 }
             }
         }
 
     }
+
 }

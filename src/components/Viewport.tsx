@@ -994,24 +994,28 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                         const pf = placedFacilitiesRef.current.find(f => f.instanceId === occupant.instanceId);
                         const meta = appData.facilities.find((m: any) => m.id === pf?.facilityId);
 
-                        // 1. Check if we clicked an INTERACTABLE PORT (Output)
+                        // 1. Output Port Interactions (Only for universal providers like PAC/Unloader)
                         if (occupant.port && occupant.port.type === 'output') {
-                            debugLog("[Viewport] Port Triggered via Grid System:", occupant.instanceId, occupant.port.id);
-                            window.dispatchEvent(new CustomEvent('open-port-selector', {
-                                detail: {
-                                    instanceId: occupant.instanceId,
-                                    portId: occupant.port.id,
-                                    facilityName: meta?.name
-                                }
-                            }));
-                            // Reset state and return to prevent facility detail from opening
-                            state.isHolding = false;
-                            state.holdingFacilityId = null;
-                            if (appRef.current?.canvas) appRef.current.canvas.style.cursor = "default";
-                            return;
+                            const isUniversal = window.config?.universal_provider_facility_ids?.includes(pf?.facilityId);
+
+                            if (isUniversal) {
+                                debugLog("[Viewport] Universal Output Port Triggered:", occupant.instanceId, occupant.port.id);
+                                window.dispatchEvent(new CustomEvent('open-port-selector', {
+                                    detail: {
+                                        instanceId: occupant.instanceId,
+                                        portId: occupant.port.id,
+                                        facilityName: meta?.name
+                                    }
+                                }));
+                                // Reset state
+                                state.isHolding = false;
+                                state.holdingFacilityId = null;
+                                if (appRef.current?.canvas) appRef.current.canvas.style.cursor = "default";
+                                return;
+                            }
                         }
 
-                        // 2. Otherwise, it's a normal click on the facility body
+                        // 2. Normal click on the facility body
                         debugLog("[Viewport] Facility Selected via Grid System:", occupant.instanceId);
                         setSelectedFacilityId(occupant.instanceId);
                         window.dispatchEvent(new CustomEvent('facility-selected', { detail: { id: occupant.instanceId } }));

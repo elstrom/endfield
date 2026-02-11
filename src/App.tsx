@@ -3,7 +3,8 @@ import { Viewport } from "./components/Viewport";
 import {
   Menu, Box, Link2, MousePointer2, Move, Eraser,
   ChevronDown, ChevronRight, X, Info, Check, PlusCircle, Zap, Cpu,
-  Maximize2, Filter, Activity, CircleDot, Trash2, Search
+  Maximize2, Filter, Activity, CircleDot, Trash2, Search, Package,
+  ArrowRightCircle, Timer
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { clsx, type ClassValue } from "clsx";
@@ -241,13 +242,23 @@ export default function App() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [showRecipes, setShowRecipes] = useState(false);
 
-  // Port Selector Modal State
+  // Port Selector Modal State (Output Ports)
   const [portSelector, setPortSelector] = useState<{
     isOpen: boolean,
     instanceId: string | null,
     portId: string | null,
     facilityName: string | null
   }>({ isOpen: false, instanceId: null, portId: null, facilityName: null });
+
+  // Input Port Item Selector Modal State
+  const [inputPortSelector, setInputPortSelector] = useState<{
+    isOpen: boolean,
+    instanceId: string | null,
+    portId: string | null,
+    facilityId: string | null,
+    facilityName: string | null,
+    slotIndex: number | null // NEW: Added slotIndex
+  }>({ isOpen: false, instanceId: null, portId: null, facilityId: null, facilityName: null, slotIndex: null });
 
   const [dragState, setDragState] = useState<{ id: string | null, icon: string | null, x: number, y: number }>({ id: null, icon: null, x: 0, y: 0 });
   const mousePos = useRef({ x: 0, y: 0 });
@@ -390,6 +401,38 @@ export default function App() {
 
       // Close modal
       setPortSelector(prev => ({ ...prev, isOpen: false }));
+    }
+  };
+
+  const handleInputPortItemSelect = async (itemId: string) => {
+    console.log("[GOAL PRINT] Input Port Item Selected:", itemId, "for facility:", inputPortSelector.instanceId, "Slot:", inputPortSelector.slotIndex);
+
+    // We don't check for portId anymore as IO slots are generic input buffers
+    if (!inputPortSelector.instanceId) return;
+
+    try {
+      console.log("[DEBUG] Invoking manual_inject_item for", itemId, "at slot", inputPortSelector.slotIndex);
+      await invoke("manual_inject_item", {
+        instanceId: inputPortSelector.instanceId,
+        itemId: itemId,
+        quantity: 50, // Full stack as requested
+        slotIndex: inputPortSelector.slotIndex ?? 0 // Default to 0 if null, though likely provided
+      });
+      console.log("[GOAL PRINT] Successfully injected full stack item to slot!");
+    } catch (e) {
+      console.error("[ERROR] Failed to inject item:", e);
+    }
+
+    // Close modal
+    setInputPortSelector(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const clearInputSlot = async (instanceId: string, slotIndex: number) => {
+    try {
+      console.log("[DEBUG] Clearing slot", slotIndex, "of", instanceId);
+      await invoke("manual_clear_slot", { instanceId, slotIndex });
+    } catch (e) {
+      console.error("Failed to clear slot:", e);
     }
   };
 
@@ -695,7 +738,7 @@ export default function App() {
 
       {/* Floating Facility Detail Modal */}
       {activeFacilityId && (
-        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#252525] border border-[#444] shadow-2xl rounded p-0 w-[40em] z-50 animate-in fade-in zoom-in-95 duration-100 font-sans text-sm">
+        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#252525] border border-[#444] shadow-2xl rounded p-0 w-[48em] z-50 animate-in fade-in zoom-in-95 duration-100 font-sans text-sm">
           {(() => {
             const instanceId = activeFacilityId;
             const pf = (window as any).placedFacilities?.find((f: any) => f.instanceId === instanceId);
@@ -703,12 +746,24 @@ export default function App() {
 
             if (!instanceId || !pf || !meta) return null;
 
-            // Find Recipes
             const recipes = appData?.recipes?.filter((r: any) => r.facility_id === meta.id) || [];
             const getItem = (id: string) => appData?.items?.find((i: any) => i.id === id);
 
+            // Refined Recipe State Tracking
+            const activeRecipe = recipes.find((r: any) => r.id === pf?.active_recipe_id);
+            const totalTime = activeRecipe?.time || 1;
+            const progressPercent = activeRecipe ? (pf.recipe_progress / totalTime) * 100 : 0;
+            const remainingTime = activeRecipe ? Math.max(0, totalTime - pf.recipe_progress) : 0;
+            const isProcessing = !!activeRecipe;
+
             return (
               <div className="flex flex-col max-h-[80vh]">
+                {/* DEBUG: Input Buffer State */}
+                {/* <div className="text-[0.6em] font-mono p-1 bg-red-900/50 text-white">
+                  IN: {JSON.stringify(pf.input_buffer)}
+                  <br/>
+                  OUT: {JSON.stringify(pf.output_buffer)}
+                </div> */}
                 <div className="flex items-center justify-between p-2 bg-[#2d2d2d] border-b border-[#444] select-none shrink-0" onMouseDown={() => { /* TODO: Drag Logic for Window */ }}>
                   <span className="font-bold text-[0.9em] uppercase opacity-80 flex items-center gap-2"><Maximize2 size={12} /> Facility Detail</span>
                   <button onClick={() => setActiveFacilityId(null)} className="hover:bg-white/10 p-1 rounded-sm transition-colors text-white/60 hover:text-white"><X size={14} /></button>
@@ -783,27 +838,55 @@ export default function App() {
                               <span className="text-[0.65em] font-bold opacity-30 uppercase text-center">Inputs</span>
                               <div className="flex gap-2 justify-center">
                                 {[...Array(meta.input_slots || 0)].map((_, i) => {
-                                  // Simplified: Show unique items in input_buffer as slots
-                                  const uniqueItems = Array.from(new Set(pf.input_buffer?.map((s: any) => s.item_id as string) || []));
-                                  const itemId = uniqueItems[i];
-                                  const item = (typeof itemId === 'string') ? getItem(itemId) : null;
-                                  const count = pf.input_buffer?.filter((s: any) => s.item_id === itemId).reduce((acc: number, s: any) => acc + (s.quantity || 1), 0) || 0;
-                                  const max = appData?.config?.slot_capacity || 50;
+                                  // Direct slot mapping logic for precise user control
+                                  const slot = pf.input_buffer && i < pf.input_buffer.length ? pf.input_buffer[i] : null;
+                                  // Check if slot has valid item
+                                  const itemId = slot?.item_id;
+                                  const item = (itemId && itemId !== "") ? getItem(itemId) : null;
+                                  const count = slot?.quantity || 0;
 
                                   return (
-                                    <div key={i} className="flex flex-col items-center gap-1">
-                                      <div className="w-[4em] h-[4em] bg-[#1a1a1a] border border-white/10 rounded flex items-center justify-center p-2 relative group/slot">
+                                    <div key={i} className="flex flex-col items-center gap-1 relative group/container">
+                                      {/* Clear Button - Shows on hover if item exists */}
+                                      {item && (
+                                        <button
+                                          className="absolute -top-2 -right-2 z-[60] bg-red-500 text-white rounded-full p-1 opacity-0 group-hover/container:opacity-100 transition-opacity hover:bg-red-600 shadow-lg border border-red-400"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            clearInputSlot(pf.instanceId, i);
+                                          }}
+                                          title="Clear Slot"
+                                        >
+                                          <X size={10} strokeWidth={3} />
+                                        </button>
+                                      )}
+
+                                      <div
+                                        className="w-[4em] h-[4em] bg-[#1a1a1a] border border-white/10 rounded flex items-center justify-center p-2 relative group/slot overflow-visible cursor-pointer hover:border-blue-500/50 hover:bg-blue-500/5 transition-all"
+                                        onClick={() => {
+                                          console.log("[GOAL PRINT] IO Input Slot Clicked:", i);
+                                          setInputPortSelector({
+                                            isOpen: true,
+                                            instanceId: pf.instanceId,
+                                            portId: null,
+                                            facilityId: pf.facilityId,
+                                            facilityName: meta.name,
+                                            slotIndex: i
+                                          });
+                                          console.log("[GOAL PRINT] Opening Modal for Slot:", i);
+                                        }}
+                                        title={`Input Slot ${i + 1}`}
+                                      >
                                         {item ? (
                                           <>
-                                            <img src={item.icon} className="max-w-full max-h-full drop-shadow-md" />
-                                            <div className="absolute -top-1 -right-1 bg-sky-600 text-[0.65em] font-bold px-1 rounded shadow-lg">{count}</div>
+                                            <img src={item.icon} className="max-w-full max-h-full drop-shadow-md relative z-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                            <div className="absolute -bottom-1 -right-1 bg-sky-600 text-white text-[0.75em] font-bold px-1.5 py-0.5 rounded shadow-xl z-50 border border-white/20 min-w-[1.2em] text-center">
+                                              {count}
+                                            </div>
                                           </>
                                         ) : (
                                           <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
                                         )}
-                                      </div>
-                                      <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                                        <div className="h-full bg-sky-500/50" style={{ width: `${(count / max) * 100}%` }} />
                                       </div>
                                     </div>
                                   );
@@ -811,9 +894,60 @@ export default function App() {
                               </div>
                             </div>
 
-                            {/* Arrow */}
-                            <div className="opacity-10 shrink-0">
-                              <ChevronRight size={24} />
+                            {/* Arrow & Progress Center (Optimized) */}
+                            <div className="flex flex-col items-center justify-center gap-3 shrink-0 min-w-[9em] relative px-4">
+                              {/* Background Aura Glow */}
+                              <div className={cn(
+                                "absolute w-24 h-24 bg-blue-500/10 blur-2xl rounded-full transition-opacity duration-1000 select-none pointer-events-none",
+                                isProcessing ? "opacity-100" : "opacity-0"
+                              )} />
+
+                              <div className="relative flex flex-col items-center gap-3 w-full">
+                                {/* Transition Icon */}
+                                <div className={cn(
+                                  "transition-all duration-700 relative flex items-center justify-center",
+                                  isProcessing ? "text-blue-400 scale-125 drop-shadow-[0_0_15px_rgba(59,130,246,0.8)]" : "opacity-10 text-white"
+                                )}>
+                                  <ArrowRightCircle size={48} strokeWidth={1.2} className={isProcessing ? "animate-pulse" : ""} />
+                                </div>
+
+                                {/* Progress Module */}
+                                <div className="w-full space-y-2.5">
+                                  {/* Progress Bar Track */}
+                                  <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/10 relative p-[2px] shadow-inner">
+                                    <div
+                                      className={cn(
+                                        "h-full rounded-full transition-all duration-300 ease-out relative overflow-hidden",
+                                        isProcessing ? "bg-gradient-to-r from-blue-600 via-sky-500 to-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.6)]" : "bg-white/5"
+                                      )}
+                                      style={{ width: `${progressPercent}%` }}
+                                    >
+                                      {/* Shimmer Effect */}
+                                      {isProcessing && (
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-shimmer" />
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Dynamic Status / Timer Label */}
+                                  <div className="flex justify-center items-center h-5">
+                                    {isProcessing ? (
+                                      <div className="flex items-center gap-2 bg-blue-500/15 px-3 py-1 rounded-full border border-blue-500/30 animate-in fade-in slide-in-from-bottom-1 duration-500 shadow-lg">
+                                        <Timer size={12} className="text-blue-400 animate-spin [animation-duration:4s]" />
+                                        <span className="text-[0.7em] font-mono font-black text-blue-400 tracking-tighter tabular-nums drop-shadow-sm">
+                                          {remainingTime.toFixed(1)}s
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-1.5 opacity-20">
+                                        <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
+                                        <span className="text-[0.6em] font-bold uppercase tracking-[0.4em]">Standby</span>
+                                        <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
 
                             {/* Output Slots */}
@@ -825,28 +959,66 @@ export default function App() {
                                   const itemId = uniqueItems[i];
                                   const item = (typeof itemId === 'string') ? getItem(itemId) : null;
                                   const count = pf.output_buffer?.filter((s: any) => s.item_id === itemId).reduce((acc: number, s: any) => acc + (s.quantity || 1), 0) || 0;
-                                  const max = appData?.config?.slot_capacity || 50;
 
                                   return (
                                     <div key={i} className="flex flex-col items-center gap-1">
-                                      <div className="w-[4em] h-[4em] bg-[#1a1a1a] border border-white/10 rounded flex items-center justify-center p-2 relative group/slot">
+                                      <div className="w-[4em] h-[4em] bg-[#1a1a1a] border border-white/10 rounded flex items-center justify-center p-2 relative group/slot overflow-visible">
                                         {item ? (
                                           <>
-                                            <img src={item.icon} className="max-w-full max-h-full drop-shadow-md" />
-                                            <div className="absolute -top-1 -right-1 bg-orange-600 text-[0.65em] font-bold px-1 rounded shadow-lg">{count}</div>
+                                            <img src={item.icon} className="max-w-full max-h-full drop-shadow-md relative z-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                            <div className="absolute -top-2 -right-2 bg-orange-600 text-white text-[0.75em] font-bold px-1.5 py-0.5 rounded shadow-xl z-50 border border-white/20 min-w-[1.2em] text-center">
+                                              {count}
+                                            </div>
                                           </>
                                         ) : (
                                           <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
                                         )}
-                                      </div>
-                                      <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                                        <div className="h-full bg-orange-500/50" style={{ width: `${(count / max) * 100}%` }} />
                                       </div>
                                     </div>
                                   );
                                 })}
                               </div>
                             </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* RECIPE PROCESSING STATUS */}
+                      {pf.active_recipe_id && (
+                        <div className="space-y-[0.8em] animate-in slide-in-from-bottom-2 duration-300">
+                          <div className="text-[0.75em] text-[#0078d7] uppercase font-bold tracking-wider border-b border-[#0078d7]/20 pb-1 flex items-center justify-between">
+                            <span className="flex items-center gap-2"><Cpu size={12} /> Production Active</span>
+                            <span className="font-mono text-white/40">{((pf.recipe_progress / (recipes.find((r: any) => r.id === pf.active_recipe_id)?.time || 1)) * 100).toFixed(0)}%</span>
+                          </div>
+                          <div className="bg-[#0078d7]/5 border border-[#0078d7]/20 p-4 rounded-lg flex flex-col gap-3">
+                            {(() => {
+                              const activeRecipe = recipes.find((r: any) => r.id === pf.active_recipe_id);
+                              if (!activeRecipe) return null;
+                              return (
+                                <>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 bg-blue-500/10 rounded flex items-center justify-center p-1">
+                                        <img src={getItem(activeRecipe.outputs[0].item_id)?.icon} className="max-w-full max-h-full" />
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-[0.85em] font-bold text-white/90">{activeRecipe.name || activeRecipe.id}</span>
+                                        <span className="text-[0.7em] opacity-40">Output: {activeRecipe.outputs[0].amount}x {getItem(activeRecipe.outputs[0].item_id)?.name}</span>
+                                      </div>
+                                    </div>
+                                    <div className="text-[0.8em] font-mono text-blue-400">
+                                      {pf.recipe_progress.toFixed(1)}s / {activeRecipe.time}s
+                                    </div>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] transition-all duration-100 ease-linear"
+                                      style={{ width: `${(pf.recipe_progress / (activeRecipe.time || 1)) * 100}%` }}
+                                    />
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
                       )}
@@ -933,11 +1105,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Footer */}
-                  <div className="pt-[1em] border-t border-white/5 flex justify-between text-[0.75em] opacity-30 font-mono">
-                    <span>Pos: {Math.floor(pf.x / (appData?.config?.grid_size || 64))}, {Math.floor(pf.y / (appData?.config?.grid_size || 64))}</span>
-                    <span>UUID: {pf.instanceId}</span>
-                  </div>
                 </div>
               </div>
             );
@@ -954,21 +1121,23 @@ export default function App() {
       />
 
       {/* Custom Drag Ghost */}
-      {dragState.id && (
-        <div
-          className="fixed pointer-events-none z-[100] opacity-80"
-          style={{
-            left: dragState.x,
-            top: dragState.y,
-            transform: 'translate(-50%, -50%)'
-          }}
-        >
-          <div className="bg-[#0078d7] p-2 rounded shadow-xl flex items-center gap-2 text-white border border-white/20">
-            {dragState.icon && <img src={dragState.icon} className="w-6 h-6 bg-black/20 rounded-sm" />}
-            <span className="font-bold text-sm">Placing Facility</span>
+      {
+        dragState.id && (
+          <div
+            className="fixed pointer-events-none z-[100] opacity-80"
+            style={{
+              left: dragState.x,
+              top: dragState.y,
+              transform: 'translate(-50%, -50%)'
+            }}
+          >
+            <div className="bg-[#0078d7] p-2 rounded shadow-xl flex items-center gap-2 text-white border border-white/20">
+              {dragState.icon && <img src={dragState.icon} className="w-6 h-6 bg-black/20 rounded-sm" />}
+              <span className="font-bold text-sm">Placing Facility</span>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
       {/* PORT SELECTOR MODAL */}
       <PortSelectorModal
         isOpen={portSelector.isOpen}
@@ -978,7 +1147,17 @@ export default function App() {
         facilityName={portSelector.facilityName}
         portId={portSelector.portId}
       />
-    </div>
+      {/* INPUT PORT ITEM SELECTOR MODAL */}
+      <InputPortItemSelectorModal
+        isOpen={inputPortSelector.isOpen}
+        onClose={() => setInputPortSelector(prev => ({ ...prev, isOpen: false }))}
+        onSelect={handleInputPortItemSelect}
+        appData={appData}
+        facilityId={inputPortSelector.facilityId}
+        facilityName={inputPortSelector.facilityName}
+        portId={inputPortSelector.portId}
+      />
+    </div >
   );
 }
 
@@ -1063,6 +1242,120 @@ function PortSelectorModal({ isOpen, onClose, onSelect, appData, facilityName, p
         {/* Footer */}
         <div className="p-[1em] bg-black/20 border-t border-white/5 text-center">
           <p className="text-[0.7em] text-white/20 uppercase tracking-[0.2em]">Select an item to assign to this output port</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InputPortItemSelectorModal({ isOpen, onClose, onSelect, appData, facilityId, facilityName, portId }: any) {
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      console.log("[GOAL PRINT] InputPortItemSelectorModal Opened", { facilityId, facilityName, portId });
+      debugLog("[App] InputPortItemSelectorModal rendered. Facility:", facilityId);
+    }
+  }, [isOpen, facilityId, facilityName, portId]);
+
+  if (!isOpen) return null;
+
+  // Get all recipes for this facility to determine valid inputs
+  const facilityRecipes = appData?.recipes?.filter((r: any) => r.facility_id === facilityId) || [];
+  const recipeItemIds = Array.from(new Set(facilityRecipes.flatMap((r: any) => r.inputs.map((inp: any) => inp.item_id))));
+
+  console.log("[DEBUG] Valid Recipe Input Item IDs for", facilityId, ":", recipeItemIds);
+
+  // Get all raw items from database
+  const rawItems = appData?.items?.filter((i: any) => i.is_raw === true) || [];
+  console.log("[DEBUG] Total Raw Items:", rawItems.length);
+
+  // Filter items based on recipe inputs if recipes exist, otherwise show all raw items
+  let availableItems = rawItems;
+  if (recipeItemIds.length > 0) {
+    availableItems = rawItems.filter((i: any) => recipeItemIds.includes(i.id));
+    console.log("[DEBUG] Filtered by Recipe:", availableItems.length, "items");
+  }
+
+  // Apply search filter
+  const filteredItems = availableItems.filter((i: any) =>
+    i.name.toLowerCase().includes(search.toLowerCase()) ||
+    i.id.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-[2em]">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
+      <div className="relative w-full max-w-[50em] bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in fade-in zoom-in duration-200">
+        {/* Header */}
+        <div className="p-[1.5em] border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-blue-500/10 to-transparent">
+          <div className="flex items-center gap-4">
+            <div className="w-[3em] h-[3em] bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400">
+              <Package size={24} />
+            </div>
+            <div>
+              <h2 className="text-[1.2em] font-bold text-white uppercase tracking-wider">Inject Raw Material</h2>
+              <p className="text-[0.8em] text-white/40">{facilityName} • Port: {portId}</p>
+              {recipeItemIds.length > 0 && (
+                <p className="text-[0.7em] text-blue-400/60 mt-1">Recipe-based items only</p>
+              )}
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-[1.5em] space-y-[1.5em] overflow-hidden flex flex-col flex-1">
+          {/* Search */}
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors" size={18} />
+            <input
+              autoFocus
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search raw materials..."
+              className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-12 pr-4 text-white focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium"
+            />
+          </div>
+
+          {/* Grid */}
+          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+              {filteredItems.map((item: any) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    console.log("[GOAL PRINT] Item Selected from Modal:", item.id, item.name);
+                    onSelect(item.id);
+                  }}
+                  title={item.name}
+                  className="aspect-square bg-[#222] border border-white/5 rounded-lg flex flex-col items-center justify-center p-2 hover:bg-[#2a2a2a] hover:border-blue-500/40 hover:scale-105 transition-all group relative"
+                >
+                  {item.icon ? (
+                    <img src={item.icon} className="max-w-[70%] max-h-[70%] drop-shadow-lg group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]" />
+                  ) : (
+                    <div className="text-white/20 text-xs">?</div>
+                  )}
+                  <div className="absolute inset-0 border-2 border-blue-500/0 group-hover:border-blue-500/20 rounded-lg pointer-events-none" />
+                </button>
+              ))}
+            </div>
+
+            {filteredItems.length === 0 && (
+              <div className="h-[20em] flex flex-col items-center justify-center text-white/20 space-y-4">
+                <Package size={48} className="opacity-20" />
+                <p className="font-bold uppercase tracking-widest text-[0.9em]">No items available</p>
+                <p className="text-[0.7em] text-white/20">Checked {availableItems.length} raw items{recipeItemIds.length > 0 ? " (recipe-filtered)" : ""}.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-[1em] bg-black/20 border-t border-white/5 text-center">
+          <p className="text-[0.7em] text-white/20 uppercase tracking-[0.2em]">Select a raw material to inject into this input port</p>
         </div>
       </div>
     </div>

@@ -57,4 +57,8 @@ pub struct PlacedFacility {
     pub input_buffer: Vec<BufferSlot>,
     #[serde(default)]
     pub output_buffer: Vec<BufferSlot>,
+    #[serde(default)]
+    pub active_recipe_id: Option<String>,
+    #[serde(default)]
+    pub recipe_progress: f64,
 }

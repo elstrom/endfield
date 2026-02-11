@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 struct AppState {
     grid: Mutex<GridState>,
     optimizer: Option<Optimizer>,
+    recipes: Vec<crate::engine::recipe::Recipe>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -187,17 +188,66 @@ fn tick_simulation(state: State<'_, AppState>) -> Vec<crate::engine::facility::P
     
     // Run simulation tick (e.g. 60 ticks per second, so dt = 1/60 approx 0.016)
     // For now, let's just use a fixed delta for logic stability
-    crate::engine::logistics_engine::LogisticsEngine::tick(&mut grid, 0.016);
+    crate::engine::logistics_engine::LogisticsEngine::tick(&mut grid, 0.016, &state.recipes);
     
     // Return updated state immediately for frontend sync
     grid.placed_facilities.clone()
+}
+
+#[tauri::command]
+fn manual_inject_item(state: State<'_, AppState>, instance_id: String, slot_index: usize, item_id: String, quantity: u32) -> Result<String, String> {
+    println!("DEBUG: manual_inject_item called: {} x{} -> {} [Slot {}]", item_id, quantity, instance_id, slot_index);
+    let mut grid = state.grid.lock().unwrap();
+    
+    if let Some(fac) = grid.placed_facilities.iter_mut().find(|f| f.instance_id == instance_id) {
+        // Ensure buffer size covers the requested slot
+        while fac.input_buffer.len() <= slot_index {
+            fac.input_buffer.push(crate::engine::facility::BufferSlot {
+                item_id: "".to_string(), // Empty placeholder
+                quantity: 0,
+                source_port_id: None,
+                target_port_id: None, 
+                progress: 0.0,
+            });
+        }
+        
+        // Overwrite standard slot data logic: direct injection implies filling the slot
+        fac.input_buffer[slot_index] = crate::engine::facility::BufferSlot {
+            item_id: item_id.clone(),
+            quantity,
+            source_port_id: None,
+            target_port_id: None,
+            progress: 0.0,
+        };
+        
+        println!("DEBUG: Injected {} into slot {}", item_id, slot_index);
+        return Ok(format!("Successfully injected {} into slot {}", item_id, slot_index));
+    }
+    
+    Err(format!("Facility {} not found", instance_id))
+}
+
+#[tauri::command]
+fn manual_clear_slot(state: State<'_, AppState>, instance_id: String, slot_index: usize) -> Result<String, String> {
+    let mut grid = state.grid.lock().unwrap();
+    if let Some(fac) = grid.placed_facilities.iter_mut().find(|f| f.instance_id == instance_id) {
+        if slot_index < fac.input_buffer.len() {
+            fac.input_buffer[slot_index].item_id = "".to_string();
+            fac.input_buffer[slot_index].quantity = 0;
+            println!("DEBUG: Cleared slot {}", slot_index);
+            return Ok("Slot cleared".to_string());
+        }
+    }
+    Ok("Slot empty or invalid index".to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     println!("DEBUG: Starting Endfield lib run()");
     let config = crate::engine::data_loader::DataLoader::load_config();
+    let recipes = crate::engine::data_loader::DataLoader::load_recipes(); // Load recipes here
     println!("DEBUG: Config loaded in run(): {:?}", config);
+    println!("DEBUG: Loaded {} recipes", recipes.len());
     
     println!("DEBUG: Initializing Optimizer (WGPU) - Optional -- DISABLED FOR DEBUGGING");
     // let optimizer = pollster::block_on(Optimizer::new());
@@ -212,6 +262,7 @@ pub fn run() {
         .manage(AppState {
             grid: Mutex::new(GridState::new(&config)),
             optimizer,
+            recipes,
         })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
@@ -222,7 +273,9 @@ pub fn run() {
             get_power_status, 
             generate_optimal_layouts, 
             log_to_terminal,
-            tick_simulation // NEW
+            tick_simulation,
+            manual_inject_item,
+            manual_clear_slot // NEW COMMAND
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
