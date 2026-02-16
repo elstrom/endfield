@@ -257,8 +257,20 @@ export default function App() {
     portId: string | null,
     facilityId: string | null,
     facilityName: string | null,
-    slotIndex: number | null // NEW: Added slotIndex
+    slotIndex: number | null
   }>({ isOpen: false, instanceId: null, portId: null, facilityId: null, facilityName: null, slotIndex: null });
+
+  const [outputBufferSelector, setOutputBufferSelector] = useState<{
+    isOpen: boolean,
+    instanceId: string | null,
+    portId: string | null,
+    facilityName: string | null
+  }>({ isOpen: false, instanceId: null, portId: null, facilityName: null });
+
+  const [outputBufferItemSelector, setOutputBufferItemSelector] = useState<{
+    isOpen: boolean,
+    instanceId: string | null,
+  }>({ isOpen: false, instanceId: null });
 
   const [dragState, setDragState] = useState<{ id: string | null, icon: string | null, x: number, y: number }>({ id: null, icon: null, x: 0, y: 0 });
   const mousePos = useRef({ x: 0, y: 0 });
@@ -321,8 +333,17 @@ export default function App() {
     };
 
     const handlePortSelectorOpen = (e: any) => {
-      debugLog("[App] handlePortSelectorOpen event received:", e.detail);
       setPortSelector({
+        isOpen: true,
+        instanceId: e.detail.instanceId,
+        portId: e.detail.portId,
+        facilityName: e.detail.facilityName
+      });
+    };
+
+    const handleOutputBufferOpen = (e: any) => {
+      debugLog("[App] handleOutputBufferOpen event received:", e.detail);
+      setOutputBufferSelector({
         isOpen: true,
         instanceId: e.detail.instanceId,
         portId: e.detail.portId,
@@ -333,6 +354,7 @@ export default function App() {
     window.addEventListener("mousemove", handleGlobalMouseMove);
     window.addEventListener("keydown", handleGlobalKeyDown);
     window.addEventListener("open-port-selector", handlePortSelectorOpen);
+    window.addEventListener("open-output-buffer", handleOutputBufferOpen);
 
     const closeMenu = () => setActiveMenu(null);
     window.addEventListener("click", closeMenu);
@@ -361,6 +383,7 @@ export default function App() {
       window.removeEventListener('facility-selected', handleFacilitySelected);
       window.removeEventListener("keydown", handleGlobalKeyDown);
       window.removeEventListener("open-port-selector", handlePortSelectorOpen);
+      window.removeEventListener("open-output-buffer", handleOutputBufferOpen);
       delete (window as any).updateFooterCoord;
     };
   }, [dragState.id]); // Removed appData from dependencies
@@ -401,6 +424,28 @@ export default function App() {
 
       // Close modal
       setPortSelector(prev => ({ ...prev, isOpen: false }));
+    }
+  };
+
+  const handleBufferItemSelect = async (itemId: string) => {
+    console.log("[WORK] handleBufferItemSelect started. ItemID:", itemId, "InstanceID:", outputBufferItemSelector.instanceId);
+    if (!outputBufferItemSelector.instanceId) {
+      console.warn("[WORK] No instanceId for buffer select. Aborting.");
+      return;
+    }
+
+    try {
+      console.log("[WORK] Invoking manual_inject_item for BUFFER (Unlimited)");
+      await invoke("manual_inject_item", {
+        instanceId: outputBufferItemSelector.instanceId,
+        itemId: itemId,
+        quantity: 999999, // Set to a very high number to simulate unlimited
+        slotIndex: 0
+      });
+      console.log("[GOAL PRINT] Unlimited items injected to Buffer.");
+      setOutputBufferItemSelector({ isOpen: false, instanceId: null });
+    } catch (e) {
+      console.error("[WORK] Failed to inject to buffer:", e);
     }
   };
 
@@ -1119,6 +1164,28 @@ export default function App() {
         facilityName={inputPortSelector.facilityName}
         portId={inputPortSelector.portId}
       />
+      {/* OUTPUT BUFFER MODAL */}
+      <OutputBufferModal
+        isOpen={outputBufferSelector.isOpen}
+        onClose={() => setOutputBufferSelector(prev => ({ ...prev, isOpen: false }))}
+        appData={appData}
+        instanceId={outputBufferSelector.instanceId}
+        facilityName={outputBufferSelector.facilityName}
+        portId={outputBufferSelector.portId}
+        onSlotClick={() => setOutputBufferItemSelector({
+          isOpen: true,
+          instanceId: outputBufferSelector.instanceId
+        })}
+      />
+      {/* ITEM PICKER FOR BUFFER */}
+      <PortSelectorModal
+        isOpen={outputBufferItemSelector.isOpen}
+        onClose={() => setOutputBufferItemSelector({ isOpen: false, instanceId: null })}
+        onSelect={handleBufferItemSelect}
+        appData={appData}
+        facilityName="Buffer Configuration"
+        portId="INTERNAL"
+      />
     </div >
   );
 }
@@ -1318,6 +1385,108 @@ function InputPortItemSelectorModal({ isOpen, onClose, onSelect, appData, facili
         {/* Footer */}
         <div className="p-[1em] bg-black/20 border-t border-white/5 text-center">
           <p className="text-[0.7em] text-white/20 uppercase tracking-[0.2em]">Select a raw material to inject into this input port</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+function OutputBufferModal({ isOpen, onClose, appData, instanceId, facilityName, portId, onSlotClick }: any) {
+  useEffect(() => {
+    if (isOpen) {
+      console.log("[WORK] OutputBufferModal Opened for Instance:", instanceId);
+    }
+  }, [isOpen, instanceId]);
+
+  if (!isOpen) return null;
+
+  const pf = (window as any).placedFacilities?.find((f: any) => f.instanceId === instanceId);
+  console.log("[WORK] Facility state in Modal (pf):", pf);
+
+  if (pf) {
+    console.log("[WORK] Input Buffer:", pf.input_buffer);
+    console.log("[WORK] Output Buffer:", pf.output_buffer);
+  }
+
+  const getItem = (id: string) => appData?.items?.find((i: any) => i.id === id);
+
+  // Filter output buffer for THIS SPECIFIC PORT if possible, 
+  // or just show relevant output slots.
+  // The user asked for "1 slot output buffer io".
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-[2em]">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
+      <div className="relative w-[30em] bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+        <div className="p-[1.5em] border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-orange-500/10 to-transparent">
+          <div className="flex items-center gap-4">
+            <div className="w-[3em] h-[3em] bg-orange-500/20 rounded-lg flex items-center justify-center text-orange-400">
+              <ArrowRightCircle size={24} />
+            </div>
+            <div>
+              <h2 className="text-[1.2em] font-bold text-white uppercase tracking-wider">Configure Logistics Output</h2>
+              <p className="text-[0.8em] text-white/40">{facilityName} • Port: {portId}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-[2em] flex flex-col items-center gap-6">
+          <div className="text-[0.75em] opacity-40 uppercase font-bold tracking-[0.2em]">Output Buffer Slot</div>
+
+          <div className="w-[8em] h-[8em] bg-[#111] border-2 border-orange-500/30 rounded-2xl flex items-center justify-center p-4 relative group shadow-[0_0_30px_rgba(249,115,22,0.1)] cursor-pointer hover:border-orange-500 hover:bg-orange-500/5 transition-all"
+            onClick={onSlotClick}
+          >
+            {(() => {
+              const outSlot = pf?.output_buffer?.[0];
+              const inSlot = pf?.input_buffer?.[0];
+              const slot = outSlot || inSlot;
+
+              if (slot) {
+                console.log("[WORK] Slot found for display:", slot, outSlot ? "(from output)" : "(from input)");
+                const item = getItem(slot.item_id);
+                return (
+                  <>
+                    <img src={item?.icon} className="max-w-full max-h-full drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" />
+                    <div className="absolute -top-3 -right-3 bg-orange-600 text-white text-[1.2em] font-black px-3 py-1 rounded-lg shadow-2xl border-2 border-white/20">
+                      {slot.quantity >= 999999 ? "∞" : slot.quantity}
+                    </div>
+                    <div className="absolute -bottom-8 text-[0.8em] font-bold text-orange-400 uppercase tracking-widest">{item?.name}</div>
+                  </>
+                );
+              }
+
+              return (
+                <div className="flex flex-col items-center gap-2 opacity-20">
+                  <Package size={32} />
+                  <span className="text-[0.7em] font-bold uppercase tracking-widest">Empty</span>
+                </div>
+              );
+            })()}
+          </div>
+
+          <div className="mt-8 grid grid-cols-2 gap-3 w-full">
+            <button
+              className="h-[3em] bg-white/5 hover:bg-white/10 rounded font-bold text-[0.8em] uppercase tracking-wider transition-colors border border-white/10"
+              onClick={onClose}
+            >
+              Close
+            </button>
+            <button
+              className="h-[3em] bg-orange-600 hover:bg-orange-500 rounded font-bold text-[0.8em] uppercase tracking-wider transition-all shadow-lg active:scale-95"
+              onClick={() => {
+                // Placeholder for future interaction, like clearing or configuring
+                onClose();
+              }}
+            >
+              Clear Buffer
+            </button>
+          </div>
+        </div>
+
+        <div className="p-[1em] bg-black/40 border-t border-white/5 text-[0.65em] text-center opacity-30 uppercase tracking-[0.3em]">
+          Logistics Node v0.1.0 • Real-time Monitoring
         </div>
       </div>
     </div>

@@ -306,7 +306,6 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
             facilityContainer.addChild(gfx);
 
             if (meta.ports) {
-                const isUniversal = window.config?.universal_provider_facility_ids?.includes(meta.id);
                 let inputPortIdx = 0;
                 let outputPortIdx = 0;
 
@@ -318,11 +317,9 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                     const pGfx = new PIXI.Graphics();
                     const pColor = port.type === 'output' ? 0xff0000 : 0x00ff00; // Red for OUT, Green for IN
 
-                    // Specific Logic for Universal Provider Output Ports
-                    const isInteractableOutput = isUniversal && port.type === 'output';
 
                     // NEW: Draw Full Block for Port
-                    const alpha = isInteractableOutput ? 0.6 : 0.3; // More visible if interactable
+                    const alpha = 0.3;
                     pGfx.beginFill(pColor, alpha);
                     pGfx.drawRect(0, 0, GRID_SIZE, GRID_SIZE);
                     pGfx.endFill();
@@ -334,25 +331,6 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                     // ITEM VISUALIZATION (Static removed, now handled by moving buffer renderer below)
 
 
-                    if (isInteractableOutput) {
-                        // Visual Markers ONLY - Interaction logic is now handled globally via Grid System in onMouseUp
-                        // Icon or Interaction Indicator in Center (Only if NO item is visualized, to avoid clutter)
-                        // Note: visual indicator only shows if no item is currently traversing
-                        const hasItemInPort = pf.output_buffer?.[outputPortIdx] || pf.input_buffer?.[inputPortIdx];
-
-                        if (!hasItemInPort) {
-                            pGfx.lineStyle(2, 0xffffff, 0.9);
-                            pGfx.drawCircle(GRID_SIZE / 2, GRID_SIZE / 2, 6);
-
-                            // Show selected item icon if exists (Configuration)
-                            const setting = pf.port_settings?.find((s: any) => s.port_id === port.id);
-                            if (setting) {
-                                pGfx.beginFill(0xffffff, 1);
-                                pGfx.drawCircle(GRID_SIZE / 2, GRID_SIZE / 2, 4);
-                                pGfx.endFill();
-                            }
-                        }
-                    }
 
                     pGfx.x = px;
                     pGfx.y = py;
@@ -995,12 +973,14 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                         const meta = appData.facilities.find((m: any) => m.id === pf?.facilityId);
 
                         // 1. Output Port Interactions (Only for universal providers like PAC/Unloader)
+
+                        // 1. Output Port Interactions (Open Output Buffer IO - Restricted to PAC/Unloader)
                         if (occupant.port && occupant.port.type === 'output') {
                             const isUniversal = window.config?.universal_provider_facility_ids?.includes(pf?.facilityId);
 
                             if (isUniversal) {
-                                debugLog("[Viewport] Universal Output Port Triggered:", occupant.instanceId, occupant.port.id);
-                                window.dispatchEvent(new CustomEvent('open-port-selector', {
+                                debugLog("[Viewport] Output Port Clicked (Universal):", occupant.instanceId, occupant.port.id);
+                                window.dispatchEvent(new CustomEvent('open-output-buffer', {
                                     detail: {
                                         instanceId: occupant.instanceId,
                                         portId: occupant.port.id,
