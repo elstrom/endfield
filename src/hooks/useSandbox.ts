@@ -289,6 +289,8 @@ export function useSandbox(appData?: any) {
                 y: f.y * (window.config?.grid_size || 64),
                 rotation: f.rotation,
                 port_settings: f.port_settings,
+                active_recipe_id: f.active_recipe_id,
+                recipe_progress: f.recipe_progress,
                 input_buffer: f.input_buffer,
                 output_buffer: f.output_buffer
             }));

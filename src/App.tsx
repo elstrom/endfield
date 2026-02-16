@@ -832,7 +832,7 @@ export default function App() {
                       {(meta.input_slots > 0 || meta.output_slots > 0) && (
                         <div className="space-y-[0.8em]">
                           <div className="text-[0.75em] opacity-50 uppercase font-bold tracking-wider border-b border-white/10 pb-1">Storage & I/O Buffers</div>
-                          <div className="flex items-center justify-between gap-[2em] bg-black/20 p-4 rounded-lg border border-white/5">
+                          <div className="flex items-center justify-between gap-[1em] bg-black/20 p-4 rounded-lg border border-white/5">
                             {/* Input Slots */}
                             <div className="flex flex-col gap-3 flex-1">
                               <span className="text-[0.65em] font-bold opacity-30 uppercase text-center">Inputs</span>
@@ -895,7 +895,7 @@ export default function App() {
                             </div>
 
                             {/* Arrow & Progress Center (Optimized) */}
-                            <div className="flex flex-col items-center justify-center gap-3 shrink-0 min-w-[9em] relative px-4">
+                            <div className="flex flex-col items-center justify-center gap-3 shrink-0 min-w-[5em] relative px-2">
                               {/* Background Aura Glow */}
                               <div className={cn(
                                 "absolute w-24 h-24 bg-blue-500/10 blur-2xl rounded-full transition-opacity duration-1000 select-none pointer-events-none",
@@ -908,7 +908,7 @@ export default function App() {
                                   "transition-all duration-700 relative flex items-center justify-center",
                                   isProcessing ? "text-blue-400 scale-125 drop-shadow-[0_0_15px_rgba(59,130,246,0.8)]" : "opacity-10 text-white"
                                 )}>
-                                  <ArrowRightCircle size={48} strokeWidth={1.2} className={isProcessing ? "animate-pulse" : ""} />
+                                  <ArrowRightCircle size={32} strokeWidth={1.2} className={isProcessing ? "animate-pulse" : ""} />
                                 </div>
 
                                 {/* Progress Module */}
@@ -983,45 +983,7 @@ export default function App() {
                         </div>
                       )}
 
-                      {/* RECIPE PROCESSING STATUS */}
-                      {pf.active_recipe_id && (
-                        <div className="space-y-[0.8em] animate-in slide-in-from-bottom-2 duration-300">
-                          <div className="text-[0.75em] text-[#0078d7] uppercase font-bold tracking-wider border-b border-[#0078d7]/20 pb-1 flex items-center justify-between">
-                            <span className="flex items-center gap-2"><Cpu size={12} /> Production Active</span>
-                            <span className="font-mono text-white/40">{((pf.recipe_progress / (recipes.find((r: any) => r.id === pf.active_recipe_id)?.time || 1)) * 100).toFixed(0)}%</span>
-                          </div>
-                          <div className="bg-[#0078d7]/5 border border-[#0078d7]/20 p-4 rounded-lg flex flex-col gap-3">
-                            {(() => {
-                              const activeRecipe = recipes.find((r: any) => r.id === pf.active_recipe_id);
-                              if (!activeRecipe) return null;
-                              return (
-                                <>
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-8 h-8 bg-blue-500/10 rounded flex items-center justify-center p-1">
-                                        <img src={getItem(activeRecipe.outputs[0].item_id)?.icon} className="max-w-full max-h-full" />
-                                      </div>
-                                      <div className="flex flex-col">
-                                        <span className="text-[0.85em] font-bold text-white/90">{activeRecipe.name || activeRecipe.id}</span>
-                                        <span className="text-[0.7em] opacity-40">Output: {activeRecipe.outputs[0].amount}x {getItem(activeRecipe.outputs[0].item_id)?.name}</span>
-                                      </div>
-                                    </div>
-                                    <div className="text-[0.8em] font-mono text-blue-400">
-                                      {pf.recipe_progress.toFixed(1)}s / {activeRecipe.time}s
-                                    </div>
-                                  </div>
-                                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] transition-all duration-100 ease-linear"
-                                      style={{ width: `${(pf.recipe_progress / (activeRecipe.time || 1)) * 100}%` }}
-                                    />
-                                  </div>
-                                </>
-                              );
-                            })()}
-                          </div>
-                        </div>
-                      )}
+
 
                       {/* RECIPES SECTION (Collapsible Bar) */}
                       {recipes.length > 0 ? (
