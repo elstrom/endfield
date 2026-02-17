@@ -10,7 +10,7 @@ export interface PlacedFacility {
     rotation: number;
     port_settings?: { port_id: string, item_id: string }[];
     input_buffer?: { item_id: string, source_port_id?: string, target_port_id?: string, quantity: number }[];
-    output_buffer?: { item_id: string, source_port_id?: string, target_port_id?: string, quantity: number, progress?: number }[];
+    output_buffer?: { item_id: string, source_port_id?: string, target_port_id?: string, quantity: number }[];
 }
 
 export interface LogisticsEdge {
@@ -281,21 +281,41 @@ export function useSandbox(appData?: any) {
     const stepSimulation = useCallback(async () => {
         try {
             const updatedFacilities = await invoke<any[]>("tick_simulation");
-            // Merge updates
-            const mapped = updatedFacilities.map((f: any) => ({
-                instanceId: f.instance_id,
-                facilityId: f.facility_id,
-                x: f.x * (window.config?.grid_size || 64),
-                y: f.y * (window.config?.grid_size || 64),
-                rotation: f.rotation,
-                port_settings: f.port_settings,
-                active_recipe_id: f.active_recipe_id,
-                recipe_progress: f.recipe_progress,
-                input_buffer: f.input_buffer,
-                output_buffer: f.output_buffer
-            }));
 
-            setPlacedFacilities(mapped);
+            setPlacedFacilities(prev => {
+                // MERGE STRATEGY: 
+                // 1. Keep all existing facilities from 'prev' that are NOT in 'updatedFacilities' 
+                //    BUT only if they were added recently (i.e. not yet confirmed by backend).
+                // Actually, simpler: Use 'instanceId' as key. 
+                // For matching IDs, update their dynamic properties.
+                // For IDs in 'prev' but not in 'updated', KEEP them (they might be pending sync).
+
+                const next = [...prev];
+                updatedFacilities.forEach((u: any) => {
+                    const idx = next.findIndex(f => f.instanceId === u.instance_id);
+                    const mapped = {
+                        instanceId: u.instance_id,
+                        facilityId: u.facility_id,
+                        x: u.x * (window.config?.grid_size || 64),
+                        y: u.y * (window.config?.grid_size || 64),
+                        rotation: u.rotation,
+                        port_settings: u.port_settings,
+                        active_recipe_id: u.active_recipe_id,
+                        recipe_progress: u.recipe_progress,
+                        input_buffer: u.input_buffer,
+                        output_buffer: u.output_buffer
+                    };
+
+                    if (idx !== -1) {
+                        next[idx] = mapped;
+                    } else {
+                        // Backend has a facility we don't? (Possible after some syncs)
+                        next.push(mapped);
+                    }
+                });
+
+                return next;
+            });
         } catch (e) {
             console.error(e);
         }

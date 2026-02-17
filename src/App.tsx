@@ -794,11 +794,16 @@ export default function App() {
             const recipes = appData?.recipes?.filter((r: any) => r.facility_id === meta.id) || [];
             const getItem = (id: string) => appData?.items?.find((i: any) => i.id === id);
 
-            // Refined Recipe State Tracking
+            // Refined Recipe State Tracking (Timestamp-based for 1:1 accuracy)
             const activeRecipe = recipes.find((r: any) => r.id === pf?.active_recipe_id);
             const totalTime = activeRecipe?.time || 1;
-            const progressPercent = activeRecipe ? (pf.recipe_progress / totalTime) * 100 : 0;
-            const remainingTime = activeRecipe ? Math.max(0, totalTime - pf.recipe_progress) : 0;
+
+            // Calculate real-time progress based on start timestamp
+            const nowSeconds = Date.now() / 1000;
+            const elapsedSinceStart = pf?.recipe_progress > 0 ? (nowSeconds - pf.recipe_progress) : 0;
+
+            const progressPercent = activeRecipe ? Math.min(100, (elapsedSinceStart / totalTime) * 100) : 0;
+            const remainingTime = activeRecipe ? Math.max(0, totalTime - elapsedSinceStart) : 0;
             const isProcessing = !!activeRecipe;
 
             return (
@@ -980,7 +985,7 @@ export default function App() {
                                       <div className="flex items-center gap-2 bg-blue-500/15 px-3 py-1 rounded-full border border-blue-500/30 animate-in fade-in slide-in-from-bottom-1 duration-500 shadow-lg">
                                         <Timer size={12} className="text-blue-400 animate-spin [animation-duration:4s]" />
                                         <span className="text-[0.7em] font-mono font-black text-blue-400 tracking-tighter tabular-nums drop-shadow-sm">
-                                          {remainingTime.toFixed(1)}s
+                                          {Math.ceil(remainingTime)}s
                                         </span>
                                       </div>
                                     ) : (

@@ -480,70 +480,7 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                 const cy = app.screen.height / 2;
                 world.position.set(cx, cy);
 
-                // --- ITEM FLOW ANIMATION ---
-                const itemsGfx = world.children.find(c => c.label === "items") as PIXI.Graphics;
-                if (itemsGfx && placedFacilitiesRef.current && appDataRef.current) {
-                    // Ensure items are always on top
-                    if (world.getChildIndex(itemsGfx) !== world.children.length - 1) {
-                        try { world.setChildIndex(itemsGfx, world.children.length - 1); } catch (e) { }
-                    }
 
-                    itemsGfx.clear();
-                    const GRID_SIZE = window.config?.grid_size || 64;
-
-                    placedFacilitiesRef.current.forEach(pf => {
-                        const meta = appDataRef.current.facilities?.find((f: any) => f.id === pf.facilityId);
-                        if (!meta) return;
-
-                        // Combine buffers for simplified rendering loop
-                        const allSlots = [
-                            ...(pf.input_buffer || []).map((s: any) => ({ ...s, isInput: true })),
-                            ...(pf.output_buffer || []).map((s: any) => ({ ...s, isInput: false }))
-                        ];
-
-                        allSlots.forEach(slot => {
-                            // OPTIMIZATION: Only render items that are actually moving (Output Buffer)
-                            // Items in Input Buffer (isInput: true) are stored and visible in UI, not on map.
-                            // Items in machines that are finished/waiting (progress >= 1.0) are also only in UI.
-                            if (slot.isInput) return;
-
-                            const isBelt = pf.facilityId.toLowerCase().includes('belt');
-                            if (!isBelt && slot.progress >= 1.0) return;
-
-                            const itemMeta = appDataRef.current.items?.find((i: any) => i.id === slot.item_id);
-                            const color = itemMeta?.color || "#AAAAAA";
-
-                            const sourcePort = meta.ports?.find((p: any) => p.id === slot.source_port_id);
-                            const targetPort = meta.ports?.find((p: any) => p.id === slot.target_port_id);
-
-                            const getPos = (p: any) => {
-                                const w = (meta.width || 1) * GRID_SIZE;
-                                const h = (meta.height || 1) * GRID_SIZE;
-                                if (!p) return { x: pf.x + w / 2, y: pf.y + h / 2 };
-                                const rotated = getRotatedPortPosition(p, meta.width, meta.height, pf.rotation || 0);
-                                return {
-                                    x: pf.x + rotated.x * GRID_SIZE + GRID_SIZE / 2,
-                                    y: pf.y + rotated.y * GRID_SIZE + GRID_SIZE / 2
-                                };
-                            };
-
-                            const startPos = getPos(sourcePort);
-                            const endPos = getPos(targetPort);
-
-                            const prog = slot.isInput ? 0 : (slot.progress || 0);
-                            const worldX = startPos.x + (endPos.x - startPos.x) * prog;
-                            const worldY = startPos.y + (endPos.y - startPos.y) * prog;
-
-                            // PIXI 8 Modern API
-                            itemsGfx.circle(worldX, worldY, 10).fill({ color, alpha: 1 });
-
-                            // Visual indicator for moving / ready
-                            if (!slot.isInput && slot.progress > 0.9) {
-                                itemsGfx.circle(worldX, worldY, 12).stroke({ color: 0xffffff, width: 2, alpha: (slot.progress - 0.9) * 10 });
-                            }
-                        });
-                    });
-                }
 
                 // 1. WASD Panning
                 if (!state.spacePressed && !state.keysPressed["AltLeft"] && !state.keysPressed["AltRight"]) {
@@ -930,6 +867,8 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
         };
 
         const onMouseUp = (e: MouseEvent) => {
+            if (e.button !== 0) return; // Only handle left click
+
             const draggedId = draggedFacilityIdRef.current;
             const state = interactionState.current;
 
@@ -1032,32 +971,32 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
                         const occupant = occupancyMapRef.current.get(key);
 
                         if (!state.pathStart) {
-                            // Correct Logic: Belt starts from Output port (lobang keluar) OR potentially empty ground if continuing existing line
-                            if (!occupant || !occupant.port || occupant.port.type !== 'output') {
-                                // Relaxed: Allow start from ground? Maybe not for now to keep logic clean.
-                                // Actually, let's keep strict start (Output Port) for now.
+                            const hasOutput = occupant && (
+                                (occupant.port && occupant.port.type === 'output') ||
+                                (occupant.ports && occupant.ports.some((p: any) => p.type === 'output'))
+                            );
+
+                            if (!hasOutput) {
                                 debugLog(`[Pathfinding] Start blocked at [${GX},${GY}]. Must start at Output port. Occupant:`, occupant);
                                 return;
                             }
-                            debugLog("[Pathfinding] Set Start Point (Output):", GX, GY, "Port:", occupant.port.id);
+                            const portId = occupant.port?.id || occupant.ports?.find((p: any) => p.type === 'output')?.id;
+                            debugLog("[Pathfinding] Set Start Point (Output):", GX, GY, "Port:", portId);
                             state.pathStart = { x: GX, y: GY };
                             setPathStart({ x: GX, y: GY });
                             return;
                         } else {
                             // Finalize Path
-                            // Strict Check: Must end at Input Port?
-                            // User Feedback: Allow ending on empty ground to "continue later".
-
-                            const isInputPort = occupant && occupant.port && occupant.port.type === 'input';
+                            const isInputPort = occupant && (
+                                (occupant.port && occupant.port.type === 'input') ||
+                                (occupant.ports && occupant.ports.some((p: any) => p.type === 'input'))
+                            );
                             const isEmpty = !occupant;
 
-                            // If not input port AND not empty, block (e.g. hitting a wall or machine body)
                             if (!isInputPort && !isEmpty) {
                                 debugLog(`[Pathfinding] Finalize blocked at [${GX},${GY}]. Obstacle detected.`);
                                 return;
                             }
-
-                            // If empty, verify it's valid ground (not OOB) - implicit by getting here
 
                             debugLog("[Pathfinding] Finalizing Path at:", GX, GY, "Nodes:", state.pathPreview.length);
 
@@ -1283,6 +1222,7 @@ export function Viewport({ appData, draggedFacilityId, onDropFinished }: { appDa
 
                 if (pathStart) {
                     debugLog("[Pathfinding] Cancelling Path Construction");
+                    state.pathStart = null;
                     setPathStart(null);
                     setPathPreview([]);
                 }

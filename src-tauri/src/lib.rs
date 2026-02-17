@@ -186,9 +186,8 @@ fn tick_simulation(state: State<'_, AppState>) -> Vec<crate::engine::facility::P
     // println!("DEBUG: tick_simulation called");
     let mut grid = state.grid.lock().unwrap();
     
-    // Run simulation tick (e.g. 60 ticks per second, so dt = 1/60 approx 0.016)
-    // For now, let's just use a fixed delta for logic stability
-    crate::engine::logistics_engine::LogisticsEngine::tick(&mut grid, 0.016, &state.recipes);
+    // Run simulation tick (Fixed 50ms intervals)
+    crate::engine::logistics_engine::LogisticsEngine::tick(&mut grid, &state.recipes);
     
     // Return updated state immediately for frontend sync
     grid.placed_facilities.clone()
@@ -207,7 +206,6 @@ fn manual_inject_item(state: State<'_, AppState>, instance_id: String, slot_inde
                 quantity: 0,
                 source_port_id: None,
                 target_port_id: None, 
-                progress: 0.0,
             });
         }
         
@@ -217,7 +215,6 @@ fn manual_inject_item(state: State<'_, AppState>, instance_id: String, slot_inde
             quantity,
             source_port_id: None,
             target_port_id: None,
-            progress: 0.0,
         };
         
         println!("DEBUG: Injected {} into slot {}", item_id, slot_index);

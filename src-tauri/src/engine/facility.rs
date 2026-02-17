@@ -41,8 +41,6 @@ pub struct BufferSlot {
     pub source_port_id: Option<String>,
     pub target_port_id: Option<String>,
     pub quantity: u32,
-    #[serde(default)]
-    pub progress: f64, // 0.0 to 1.0 representing movement progress
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
